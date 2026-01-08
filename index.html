@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Bowlliard Tablet</title>
 
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#121212">
-<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <script>
 window.onerror = function(msg, url, line, col, error) {
@@ -16,26 +16,176 @@ window.onerror = function(msg, url, line, col, error) {
 </script>
 
 <style>
-/* 省略なし：見た目部分はあなたのコードをそのまま使用 */
 :root {
-    --bg-color:#121212;--card-bg:#1e1e1e;--active-bg:#2e7d32;
-    --accent-color:#00e676;--text-main:#fff;--text-sub:#b0bec5;
-    --btn-bg:#37474f;--btn-text:#fff;--btn-disabled:#263238;
-    --danger:#ef5350;--warn:#ffca28;
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --active-bg: #2e7d32;
+    --accent-color: #00e676;
+    --text-main: #ffffff;
+    --text-sub: #b0bec5;
+    --btn-bg: #37474f;
+    --btn-text: #ffffff;
+    --btn-disabled: #263238;
+    --danger: #ef5350;
+    --warn: #ffca28;
 }
-*{box-sizing:border-box;touch-action:manipulation;}
-body{margin:0;padding:15px;background:var(--bg-color);color:#fff;
-font-family:Roboto,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;}
-/* 以降のCSSは元コードと同一のため省略せずそのまま貼る想定 */
+
+* { box-sizing: border-box; touch-action: manipulation; }
+
+body {
+    font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+header {
+    width: 100%;
+    max-width: 1000px;
+    background: var(--card-bg);
+    padding: 15px 25px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border-bottom: 2px solid var(--active-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-sub);
+    font-weight: normal;
+}
+
+.total-score-box { text-align: right; }
+.total-label { font-size: 0.8rem; color: var(--text-sub); display: block; }
+.total-value { font-size: 2.5rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
+
+.scoreboard {
+    width: 100%;
+    max-width: 1000px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 20px;
+}
+
+.frame {
+    background: var(--card-bg);
+    border-radius: 6px;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 70px;
+    position: relative;
+}
+
+.frame.active {
+    background: var(--active-bg);
+    transform: scale(1.05);
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(0,230,118,.4);
+    border: 1px solid var(--accent-color);
+}
+
+.frame-header {
+    font-size: .8rem;
+    text-align: center;
+    color: var(--text-sub);
+}
+
+.rolls {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    font-weight: 700;
+    font-size: 1rem;
+    height: 20px;
+}
+
+.roll-box { width: 20px; text-align: center; }
+
+.frame-score {
+    font-size: 1.5rem;
+    text-align: center;
+    font-weight: 800;
+    height: 30px;
+}
+
+.main-content {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-panel {
+    flex: 1;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.stats-bar {
+    background: rgba(255,255,255,.05);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.controls-wrapper {
+    flex: 1.5;
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+button {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    height: 60px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    border-radius: 8px;
+}
+
+@media (min-width: 768px) {
+    .scoreboard { grid-template-columns: repeat(10, 1fr); }
+    .frame { min-height: 90px; }
+    .main-content { flex-direction: row; }
+    button { height: 80px; font-size: 1.8rem; }
+}
 </style>
 </head>
 
 <body>
+
 <header>
-    <div><h1>Bowlliard <span style="font-size:.6em;color:var(--accent-color)">WASHINO Edition</span></h1></div>
-    <div>
-        <div style="font-size:.8rem;color:#aaa">TOTAL SCORE</div>
-        <div id="total-score" style="font-size:2.5rem;color:var(--accent-color)">0</div>
+    <div class="header-title">
+        <h1>Bowlliard <span style="font-size:.6em;color:var(--accent-color)">WASHINO Edition</span></h1>
+    </div>
+    <div class="total-score-box">
+        <span class="total-label">TOTAL SCORE</span>
+        <span class="total-value" id="total-score">0</span>
     </div>
 </header>
 
@@ -44,12 +194,8 @@ font-family:Roboto,Arial,sans-serif;display:flex;flex-direction:column;align-ite
 <div class="main-content">
     <div class="info-panel">
         <div class="stats-bar">
-            <span class="avg-label">AVG (Last 5)</span>
-            <span class="avg-value" id="average-score">---</span>
-        </div>
-        <div id="history-section" style="display:none">
-            <ul id="history-list" class="history-list"></ul>
-            <button onclick="clearHistory()">履歴を全消去</button>
+            <span>AVG (Last 5)</span>
+            <span id="average-score">---</span>
         </div>
     </div>
 
@@ -73,19 +219,10 @@ font-family:Roboto,Arial,sans-serif;display:flex;flex-direction:column;align-ite
 </div>
 
 <script>
-/* ===== Service Worker ===== */
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js');
-    });
-}
-
-/* ===== Game Logic ===== */
 let rolls=[],currentFrame=1,isFinished=false;
+
 const scoreboard=document.getElementById('scoreboard');
 const totalScoreEl=document.getElementById('total-score');
-const buttons=document.querySelectorAll('#keypad button');
-const STORAGE_KEY='bowlliard_history_v2';
 
 function render(){
     scoreboard.innerHTML='';
@@ -93,8 +230,9 @@ function render(){
     for(let f=1;f<=10;f++){
         const frame=document.createElement('div');
         frame.className='frame'+(f===currentFrame&&!isFinished?' active':'');
-        const r1=rolls[idx],r2=rolls[idx+1],r3=rolls[idx+2];
+        frame.innerHTML=`<div class="frame-header">${f}</div>`;
         let score=null;
+        const r1=rolls[idx],r2=rolls[idx+1],r3=rolls[idx+2];
 
         if(f<10){
             if(r1===10){score=(r2!=null&&r3!=null)?10+r2+r3:null;idx+=1;}
@@ -108,7 +246,7 @@ function render(){
             }
         }
         if(score!=null){total+=score;}
-        frame.innerHTML=`<div>${f}</div><div>${score??''}</div>`;
+        frame.innerHTML+=`<div class="frame-score">${score??''}</div>`;
         scoreboard.appendChild(frame);
     }
     totalScoreEl.textContent=total;
@@ -118,11 +256,7 @@ function updateFrame(){
     let idx=0,f=1;
     while(f<=10&&idx<rolls.length){
         const r1=rolls[idx];
-        if(f<10){
-            idx+=r1===10?1:2;
-        }else{
-            idx+=r1===10||rolls[idx]+rolls[idx+1]===10?3:2;
-        }
+        idx+=(f<10?(r1===10?1:2):(r1===10||rolls[idx]+rolls[idx+1]===10?3:2));
         f++;
     }
     currentFrame=f;
@@ -133,10 +267,7 @@ function addScore(p){
     rolls.push(p);
     updateFrame();
     render();
-    if(currentFrame>10){
-        isFinished=true;
-        saveHistory(Number(totalScoreEl.textContent));
-    }
+    if(currentFrame>10)isFinished=true;
 }
 
 function undo(){
@@ -155,21 +286,8 @@ function resetGame(){
     }
 }
 
-function getHistory(){
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-}
-function saveHistory(score){
-    const h=getHistory();
-    h.unshift({score,date:new Date().toLocaleString()});
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(h.slice(0,50)));
-}
-function clearHistory(){
-    if(confirm('削除しますか？')){
-        localStorage.removeItem(STORAGE_KEY);
-    }
-}
-
 render();
 </script>
+
 </body>
 </html>
