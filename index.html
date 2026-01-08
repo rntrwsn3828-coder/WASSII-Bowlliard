@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BowlliardRanking</title>
+    <title>BostonBowlliardRanking</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
@@ -47,6 +47,34 @@
         .stat-value { font-size: 1.3rem; font-weight: bold; color: #fff; }
         .chart-container { background: var(--card-bg); padding: 10px; border-radius: 8px; height: 250px; position: relative; width: 100%; }
 
+        /* --- カレンダー修正版 --- */
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .cal-btn { height: 30px; font-size: 1rem; width: 40px; }
+        .current-month { font-size: 1.2rem; font-weight: bold; }
+        
+        /* 縦並び防止のための強力なスタイル */
+        .calendar-grid { 
+            display: grid !important; 
+            grid-template-columns: repeat(7, 1fr) !important; 
+            gap: 5px !important; 
+            text-align: center !important; 
+            width: 100% !important;
+        }
+        
+        .weekday { color: var(--text-sub); font-size: 0.8rem; padding-bottom: 5px; display:flex; justify-content:center; }
+        .day { background: var(--card-bg); height: 50px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.9rem; position: relative; width: auto !important; }
+        .day.today { border: 1px solid var(--accent-color); }
+        .day.has-game { background: #1b3323; }
+        .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; cursor: pointer; text-decoration: underline; }
+        .day-empty { background: transparent; }
+        
+        .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .history-item { background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; }
+        .history-item:hover { background: rgba(255,255,255,0.1); }
+        .history-item:first-child { border-left: 3px solid var(--accent-color); background: rgba(0, 230, 118, 0.05); }
+        .h-date { color: var(--text-sub); font-size: 0.8rem; }
+        .h-score { font-weight: bold; font-size: 1.1rem; color: var(--accent-color); }
+
         .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #111; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
         .tab-btn { background: transparent; border: none; color: #666; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: center; width: 100%; }
         .tab-btn.active { color: var(--accent-color); background: rgba(255,255,255,0.05); }
@@ -72,7 +100,7 @@
         .ranking-table th.center { text-align: center; }
         .ranking-table th.right { text-align: right; }
         .ranking-table td { padding: 12px 5px; border-bottom: 1px solid #333; color: #fff; font-size: 0.9rem; vertical-align: middle; cursor: pointer; }
-        .ranking-table tr:active { background-color: rgba(255,255,255,0.1); } /* タップ時のフィードバック */
+        .ranking-table tr:active { background-color: rgba(255,255,255,0.1); } 
 
         .rank-badge { display: flex; justify-content: center; align-items: center; width: 28px; height: 28px; border-radius: 50%; font-weight: bold; font-size: 0.9rem; margin: 0 auto; }
         .rank-1 .rank-badge { background: linear-gradient(135deg, #FFD700, #FDB931); color: #000; box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
@@ -92,12 +120,13 @@
         .rank-filter-btn { background: #333; color: #888; border: 1px solid #444; border-radius: 15px; padding: 5px 12px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
         .rank-filter-btn.active { background: var(--active-bg); color: #fff; border-color: var(--accent-color); font-weight: bold; }
 
-        /* ポップアップ */
+        /* モーダル修正版（普段は非表示） */
         .modal {
-            display: none !important; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
+            display: none !important; /* 強制非表示 */
+            position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
             background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 10px; backdrop-filter: blur(5px);
         }
-        .modal.show { display: flex !important; }
+        .modal.show { display: flex !important; /* 表示時のみflex */ }
         .modal-content { background-color: #222; border: 1px solid #444; border-radius: 12px; width: 100%; max-width: 800px; padding: 20px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .modal-title { font-size: 1.1rem; color: #fff; font-weight: bold; }
@@ -123,7 +152,7 @@
 
     <div id="view-game" class="view active">
         <header>
-            <div class="header-title"><h1>WassiiBowlliard <span style="font-size:0.6em; color:var(--accent-color)">Rankings</span></h1></div>
+            <div class="header-title"><h1>BostonBowlliard <span style="font-size:0.6em; color:var(--accent-color)">Rankings</span></h1></div>
             <div class="total-score-box"><span class="total-label">TOTAL</span><span class="total-value" id="total-score">0</span></div>
         </header>
 
@@ -151,7 +180,7 @@
                 
                 <div id="game-ranking-area" style="display:none; margin-top:15px; animation: fadeIn 0.5s;">
                     <button class="rank-btn-game" onclick="sendToRanking(this)">
-                        🏆 このスコアをランキングに登録
+                        🏆 このスコアをRankingsに登録
                     </button>
                 </div>
             </div>
@@ -299,18 +328,31 @@
             });
         }
 
+        // ★修正ポイント：日付型判定ロジックでNaNを防ぐ
         function openGameDetail(gameData) {
             if(!gameData || !gameData.rolls) {
                 alert("詳細データがありません。");
                 return;
             }
-            const d = new Date(gameData.timestamp);
-            document.getElementById('modal-date').textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            
+            const dateEl = document.getElementById('modal-date');
+            const ts = gameData.timestamp;
+
+            if (typeof ts === 'number') {
+                // ローカル履歴（数値）の場合
+                const d = new Date(ts);
+                dateEl.textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            } else {
+                // ランキング経由（文字）の場合
+                dateEl.textContent = ts;
+            }
+
             document.getElementById('modal-score').textContent = gameData.score;
             document.getElementById('modal-rate').textContent = calculateShootRate(gameData.rolls) + "%";
             renderScoreboardToTarget(gameData.rolls, modalScoreboardEl);
             modalEl.classList.add('show');
         }
+        
         function closeModal() { modalEl.classList.remove('show'); }
         modalEl.onclick = function(e) { if(e.target === modalEl) closeModal(); }
 
@@ -327,7 +369,7 @@
 
             localStorage.setItem('last_player_name', playerName);
 
-            if(!confirm(`${playerName} さん\nスコア: ${lastGame.score}\nシュート率: ${rate}%\nAvg: ${currentAvg}\n\nこのスコアをランキングに登録しますか？`)) return;
+            if(!confirm(`${playerName} さん\nスコア: ${lastGame.score}\nシュート率: ${rate}%\nAvg: ${currentAvg}\n\nこのスコアをRankingsに登録しますか？`)) return;
 
             const originalText = btnElement.innerText;
             btnElement.innerText = "送信中...";
@@ -342,10 +384,10 @@
                     score: lastGame.score,
                     rate: rate,
                     avg: currentAvg,
-                    rolls: lastGame.rolls // ★詳細データも送信
+                    rolls: lastGame.rolls // 詳細データ送信
                 })
             }).then(() => {
-                alert("登録完了！ランキングタブで確認できます。");
+                alert("登録完了！Rankingsタブで確認できます。");
                 btnElement.innerText = originalText;
                 btnElement.disabled = false;
             }).catch(err => {
@@ -385,23 +427,17 @@
                 }
                 
                 data.forEach((row, index) => {
-                    // [順位, 日付, 名前, スコア, 率, Avg, Rolls] の7列
                     const rank = row[0];
                     const dateRaw = row[1];
                     const name = row[2];
                     const score = row[3];
                     const rate = row[4];
                     const avg = row[5];
-                    const rollsJson = row[6]; // ★詳細データ
+                    const rollsJson = row[6]; // 詳細データ
 
                     let dateStr = "";
                     if(dateRaw) {
-                        const d = new Date(dateRaw);
-                        if(!isNaN(d.getTime())) {
-                            dateStr = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`;
-                        } else {
-                            dateStr = dateRaw;
-                        }
+                        dateStr = dateRaw; // GAS側でgetDisplayValues()しているのでそのまま使う
                     }
 
                     let rankClass = 'rank-other';
@@ -425,7 +461,6 @@
                         </td>
                     `;
                     
-                    // ★タップで詳細表示
                     tr.onclick = function() {
                         if(rollsJson) {
                             try {
