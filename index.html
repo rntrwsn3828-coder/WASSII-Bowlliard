@@ -92,6 +92,10 @@
         .avg-value { color: #fff; font-weight: bold; font-size: 1.2rem; }
         .stats-bar { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 
+        /* ランキングボタン用スタイル */
+        .rank-btn-game { width:100%; background:var(--active-bg); border:1px solid var(--accent-color); color:#fff; font-weight:bold; border-radius:8px; box-shadow: 0 0 15px rgba(0,230,118,0.4); height: 60px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .rank-btn-game:active { transform: translateY(2px); box-shadow: none; }
+        
         @media (min-width: 768px) {
             .scoreboard { grid-template-columns: repeat(10, 1fr); }
             .frame { min-height: 80px; }
@@ -99,6 +103,7 @@
             .info-panel { order: 0; flex: 1; }
             .controls-wrapper { order: 0; flex: 1.5; padding: 15px; }
             button { height: 80px; font-size: 1.8rem; }
+            .rank-btn-game { height: 80px; font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -130,6 +135,12 @@
                     <button onclick="addScore(4)">4</button><button onclick="addScore(5)">5</button><button onclick="addScore(6)">6</button><button onclick="addScore(7)">7</button>
                     <button onclick="addScore(8)">8</button><button onclick="addScore(9)">9</button><button class="btn-strike" onclick="addScore(10)">10</button>
                     <button class="btn-undo" onclick="undo()">↶</button><button class="btn-reset" onclick="resetGame()">RESET</button>
+                </div>
+                
+                <div id="game-ranking-area" style="display:none; margin-top:15px; animation: fadeIn 0.5s;">
+                    <button class="rank-btn-game" onclick="sendToRanking(this)">
+                        🏆 このスコアをランキングに登録
+                    </button>
                 </div>
             </div>
         </div>
@@ -167,8 +178,8 @@
         <div class="chart-container"><canvas id="scoreChart"></canvas></div>
         
         <div style="margin-top:20px; text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center;">
-             <button id="btn-send-ranking" onclick="sendToRanking()" style="background:var(--active-bg); border:1px solid var(--accent-color); color:#fff; font-size:1rem; font-weight:bold; height:50px; width:auto; padding:0 30px; border-radius:25px; box-shadow: 0 4px 10px rgba(0,230,118,0.3);">
-                 🏆 ランキングに登録
+             <button id="btn-send-ranking-stats" onclick="sendToRanking(this)" style="background:transparent; border:1px solid var(--accent-color); color:var(--accent-color); font-size:0.9rem; height:40px; width:auto; padding:0 20px; border-radius:20px;">
+                 🏆 直前のゲームをランキング登録 (予備)
              </button>
         </div>
 
@@ -267,13 +278,13 @@
         modalEl.onclick = function(e) { if(e.target === modalEl) closeModal(); }
 
         // --- GAS連携: ランキング送信機能 ---
-        function sendToRanking() {
+        function sendToRanking(btnElement) {
             const history = getHistory();
             if (history.length === 0) { alert("送信するデータがありません。"); return; }
             
             const lastGame = history[0]; 
             const rate = calculateShootRate(lastGame.rolls);
-            const currentAvg = document.getElementById('stat-avg').textContent; // アベレージ取得
+            const currentAvg = document.getElementById('stat-avg').textContent; 
 
             const playerName = prompt("ランキングに登録する名前を入力してください:", localStorage.getItem('last_player_name') || "");
             if (!playerName) return;
@@ -282,10 +293,9 @@
 
             if(!confirm(`${playerName} さん\nスコア: ${lastGame.score}\nシュート率: ${rate}%\nAvg: ${currentAvg}\n\nこのスコアをランキングに登録しますか？`)) return;
 
-            const sendBtn = document.getElementById('btn-send-ranking');
-            const originalText = sendBtn.innerText;
-            sendBtn.innerText = "送信中...";
-            sendBtn.disabled = true;
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "送信中...";
+            btnElement.disabled = true;
 
             fetch(GAS_URL, {
                 method: "POST",
@@ -298,17 +308,16 @@
                     avg: currentAvg
                 })
             }).then(() => {
-                alert("登録完了！スプレッドシートを確認してください。");
-                sendBtn.innerText = originalText;
-                sendBtn.disabled = false;
+                alert("登録完了！");
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
             }).catch(err => {
                 alert("送信エラー: " + err);
-                sendBtn.innerText = originalText;
-                sendBtn.disabled = false;
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
             });
         }
 
-        // --- スコアボード描画 (10フレ3枠対応) ---
         function renderScoreboardToTarget(targetRolls, targetEl) {
             targetEl.innerHTML = ''; 
             let rollIndex = 0; 
@@ -325,7 +334,6 @@
                 let r1 = targetRolls[rollIndex], r2 = targetRolls[rollIndex + 1];
 
                 if (f < 10) {
-                    // 通常フレーム
                     let box1 = document.createElement('div'); box1.className = 'roll-box';
                     if (r1 !== undefined) box1.textContent = (r1 === 10 ? 'X' : (r1 === 0 ? '-' : r1));
                     rollsDiv.appendChild(box1);
@@ -348,7 +356,6 @@
                         }
                     }
                 } else {
-                    // 10フレーム (3枠表示)
                     let localIdx = rollIndex;
                     let f10_r1 = targetRolls[localIdx];
                     let f10_r2 = targetRolls[localIdx+1];
@@ -391,7 +398,6 @@
             }
         }
 
-        // --- スコア計算ロジック ---
         function calcFrameScoreWithRolls(frame, startIndex, targetRolls) {
             if (startIndex >= targetRolls.length) return null; let rollsData = targetRolls;
             if (frame === 10) {
@@ -531,7 +537,16 @@
         }
         
         function updateButtonState() {
-            if (isGameFinished) { for (let i = 0; i <= 10; i++) { buttons[i].disabled = false; } return; }
+            if (isGameFinished) { 
+                for (let i = 0; i <= 10; i++) { buttons[i].disabled = false; } 
+                // ★ゲーム終了時にボタンを表示
+                document.getElementById('game-ranking-area').style.display = 'block';
+                return; 
+            } else {
+                // ★ゲーム中は隠す
+                document.getElementById('game-ranking-area').style.display = 'none';
+            }
+
             let idx = 0; for(let f=1; f<currentFrame; f++) { if(rolls[idx] === 10) idx++; else idx += 2; }
             let frameRolls = []; for(let i=idx; i<rolls.length; i++) { frameRolls.push(rolls[i]); }
             let maxPins = 10;
