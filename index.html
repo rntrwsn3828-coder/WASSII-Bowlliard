@@ -3,90 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bowlliard Analytics</title>
+    <title>Bowlliard Analytics Pro+</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
     <link rel="apple-touch-icon" href="icon-192.png">
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+        /* --- デザイン設定 (前回ベース) --- */
         :root { --bg-color: #121212; --card-bg: #1e1e1e; --active-bg: #2e7d32; --accent-color: #00e676; --text-main: #ffffff; --text-sub: #b0bec5; --btn-bg: #37474f; --btn-text: #ffffff; --btn-disabled: #263238; --danger: #ef5350; --warn: #ffca28; }
         * { box-sizing: border-box; touch-action: manipulation; }
-        body { font-family: "Roboto", sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-        /* --- 共通レイアウト --- */
-        .view { display: none; flex-direction: column; height: 100%; width: 100%; overflow-y: auto; padding: 15px; padding-bottom: 80px; }
-        .view.active { display: flex; }
-
-        header { width: 100%; background: var(--card-bg); padding: 10px 20px; border-radius: 12px; margin-bottom: 15px; border-bottom: 2px solid var(--active-bg); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        body { font-family: "Roboto", sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        header { width: 100%; max-width: 1000px; background: var(--card-bg); padding: 10px 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-bottom: 2px solid var(--active-bg); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .header-title h1 { margin: 0; font-size: 1.2rem; color: var(--text-sub); font-weight: normal; }
         .total-score-box { text-align: right; }
         .total-label { font-size: 0.7rem; color: var(--text-sub); display: block; }
         .total-value { font-size: 2.2rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
 
-        /* --- ゲーム画面 --- */
-        .scoreboard { width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 15px; flex-shrink: 0; }
-        .frame { background: var(--card-bg); border-radius: 6px; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; min-height: 60px; position: relative; }
+        .scoreboard { width: 100%; max-width: 1000px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 15px; flex-shrink: 0; }
+        .frame { background: var(--card-bg); border-radius: 6px; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; min-height: 65px; position: relative; }
         .frame.active { background: var(--active-bg); border: 1px solid var(--accent-color); transform: scale(1.02); z-index: 5; }
         .frame-header { font-size: 0.7rem; text-align: center; color: var(--text-sub); }
         .frame.active .frame-header { color: #fff; font-weight: bold; }
         .rolls { display: flex; justify-content: center; gap: 2px; font-weight: 700; font-size: 0.9rem; height: 18px; }
         .roll-box { width: 18px; text-align: center; }
-        .frame-score { font-size: 1.3rem; text-align: center; font-weight: 800; color: var(--text-main); height: 26px; }
+        .frame-score { font-size: 1.4rem; text-align: center; font-weight: 800; color: var(--text-main); height: 28px; line-height: 28px; }
         .frame.active .frame-score { color: #fff; }
 
-        .game-area { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
-        .controls-wrapper { background: var(--card-bg); padding: 10px; border-radius: 12px; }
+        .view { display: none; flex-direction: column; width: 100%; max-width: 1000px; padding-bottom: 80px; }
+        .view.active { display: flex; }
+        .main-content { width: 100%; display: flex; flex-direction: column; gap: 15px; }
+
+        .controls-wrapper { background: var(--card-bg); padding: 10px; border-radius: 12px; order: 1; }
+        .info-panel { background: var(--card-bg); border-radius: 12px; padding: 15px; order: 2; }
+
+        /* Stats画面レイアウト修正 */
+        .stats-main-card {
+            background: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--accent-color);
+            margin-bottom: 10px;
+        }
+        .stats-main-value { font-size: 2.5rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
+        .stat-label { font-size: 0.7rem; color: var(--text-sub); display: block; margin-bottom: 5px; }
+        .stat-value { font-size: 1.3rem; font-weight: bold; color: #fff; }
+        .chart-container { background: var(--card-bg); padding: 10px; border-radius: 8px; height: 250px; position: relative; width: 100%; }
+
+        /* Calendar & Tab (変更なし) */
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .cal-btn { height: 30px; font-size: 1rem; width: 40px; }
+        .current-month { font-size: 1.2rem; font-weight: bold; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .weekday { color: var(--text-sub); font-size: 0.8rem; padding-bottom: 5px; }
+        .day { background: var(--card-bg); height: 50px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.9rem; position: relative; }
+        .day.today { border: 1px solid var(--accent-color); }
+        .day.has-game { background: #1b3323; }
+        .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; }
+        .day-empty { background: transparent; }
+        
+        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #111; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .tab-btn { background: transparent; border: none; color: #666; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: center; width: 100%; }
+        .tab-btn.active { color: var(--accent-color); background: rgba(255,255,255,0.05); }
+        .tab-icon { font-size: 1.2rem; }
+
         .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        button { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 0; height: 50px; font-size: 1.3rem; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: all 0.1s; }
+        button { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 0; height: 55px; font-size: 1.3rem; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: all 0.1s; }
         button:active { transform: translateY(2px); box-shadow: none; background: var(--accent-color); color: #000; }
         button:disabled { background: var(--btn-disabled); color: #444; opacity: 0.6; box-shadow: none; }
         .btn-strike { color: var(--accent-color); border: 2px solid var(--accent-color); }
         .btn-reset { background: #3e2723; color: var(--danger); font-size: 1rem; grid-column: span 2; }
         .btn-undo { background: #333; color: var(--warn); font-size: 1rem; grid-column: span 2; border: 1px solid var(--warn); }
+        .btn-clear-history { background: transparent; border: 1px solid #444; color: #666; font-size: 0.8rem; margin-top: 10px; width: 100%; height: 30px; box-shadow: none; }
+        .avg-label { color: var(--text-sub); font-size: 0.9rem; }
+        .avg-value { color: #fff; font-weight: bold; font-size: 1.2rem; }
+        .stats-bar { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .history-item { background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 0.9rem; }
+        .history-item:first-child { border-left: 3px solid var(--accent-color); background: rgba(0, 230, 118, 0.05); }
+        .h-date { color: var(--text-sub); font-size: 0.8rem; }
+        .h-score { font-weight: bold; font-size: 1.1rem; }
 
-        /* --- データ分析画面 --- */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; }
-        .stat-label { font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px; }
-        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent-color); }
-        
-        .chart-container { background: var(--card-bg); padding: 10px; border-radius: 8px; height: 250px; position: relative; width: 100%; }
-
-        /* --- カレンダー画面 --- */
-        .calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .cal-btn { height: 30px; font-size: 1rem; width: 40px; }
-        .current-month { font-size: 1.2rem; font-weight: bold; }
-        
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .weekday { color: var(--text-sub); font-size: 0.8rem; padding-bottom: 5px; }
-        .day { background: var(--card-bg); height: 50px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.9rem; position: relative; }
-        .day.today { border: 1px solid var(--accent-color); }
-        .day.has-game { background: #1b3323; } /* ゲームした日は少し緑 */
-        .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; }
-        .day-empty { background: transparent; }
-
-        /* --- タブナビゲーション（下部） --- */
-        .tab-bar { 
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; 
-            background: #111; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100;
-        }
-        .tab-btn { 
-            background: transparent; border: none; color: #666; font-size: 0.7rem; 
-            display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: center; width: 100%;
-        }
-        .tab-btn.active { color: var(--accent-color); background: rgba(255,255,255,0.05); }
-        .tab-icon { font-size: 1.2rem; }
-
-        /* PC・タブレット対応 */
         @media (min-width: 768px) {
             .scoreboard { grid-template-columns: repeat(10, 1fr); }
             .frame { min-height: 80px; }
-            .game-area { flex-direction: row; }
-            .controls-wrapper, .info-panel { flex: 1; }
-            button { height: 70px; font-size: 1.5rem; }
+            .main-content { flex-direction: row; align-items: flex-start; }
+            .info-panel { order: 0; flex: 1; }
+            .controls-wrapper { order: 0; flex: 1.5; padding: 15px; }
+            button { height: 80px; font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -100,7 +105,15 @@
 
         <div class="scoreboard" id="scoreboard"></div>
 
-        <div class="game-area">
+        <div class="main-content">
+            <div class="info-panel">
+                <div class="stats-bar"><span class="avg-label">Potting Rate (20)</span><span class="avg-value" id="game-view-rate">---%</span></div>
+                <div id="history-section">
+                    <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History</div>
+                    <ul class="history-list" id="history-list"></ul>
+                </div>
+            </div>
+
             <div class="controls-wrapper">
                 <div class="controls" id="keypad">
                     <button onclick="addScore(0)">G</button><button onclick="addScore(1)">1</button><button onclick="addScore(2)">2</button><button onclick="addScore(3)">3</button>
@@ -109,42 +122,44 @@
                     <button class="btn-undo" onclick="undo()">↶</button><button class="btn-reset" onclick="resetGame()">RESET</button>
                 </div>
             </div>
-            <div style="text-align:center; padding:10px; color:#888; font-size:0.9rem;">
-                Recent Avg (5 games): <span id="game-view-avg" style="color:white; font-weight:bold;">---</span>
-            </div>
         </div>
     </div>
 
     <div id="view-calendar" class="view">
         <header><div class="header-title"><h1>Calendar</h1></div></header>
-        
         <div class="calendar-controls">
             <button class="cal-btn" onclick="changeMonth(-1)">◀</button>
             <span class="current-month" id="cal-month-label">---</span>
             <button class="cal-btn" onclick="changeMonth(1)">▶</button>
         </div>
-        
         <div class="calendar-grid">
             <div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div><div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
         </div>
         <div class="calendar-grid" id="calendar-body"></div>
-        
-        <div style="margin-top:20px; font-size:0.8rem; color:#888;">
-            *日付の下の数字はその日のBest Scoreです
-        </div>
     </div>
 
     <div id="view-stats" class="view">
-        <header><div class="header-title"><h1>Stats & Growth</h1></div></header>
+        <header><div class="header-title"><h1>Analysis (Last 20)</h1></div></header>
         
+        <div class="stats-main-card">
+            <span class="stat-label">Potting Rate</span>
+            <span class="stats-main-value" id="stat-potting">---%</span>
+        </div>
+
         <div class="stats-grid">
-            <div class="stat-card"><span class="stat-label">Average</span><span class="stat-value" id="stat-avg">---</span></div>
-            <div class="stat-card"><span class="stat-label">High Score</span><span class="stat-value" id="stat-high">---</span></div>
+            <div class="stat-card">
+                <span class="stat-label">Average</span>
+                <span class="stat-value" id="stat-avg">---</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" style="color:#ffca28">High Score</span>
+                <span class="stat-value" id="stat-high" style="color:#ffca28">---</span>
+            </div>
             <div class="stat-card"><span class="stat-label">Strike Rate</span><span class="stat-value" id="stat-strike">---%</span></div>
             <div class="stat-card"><span class="stat-label">Spare Rate</span><span class="stat-value" id="stat-spare">---%</span></div>
         </div>
 
-        <div style="margin-bottom:10px; font-size:0.9rem; color:#ccc;">Score History (Last 20 Games)</div>
+        <div style="margin-bottom:10px; font-size:0.9rem; color:#ccc;">Score History</div>
         <div class="chart-container">
             <canvas id="scoreChart"></canvas>
         </div>
@@ -155,282 +170,237 @@
     </div>
 
     <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('game')">
-            <span class="tab-icon">🎱</span>Game
-        </button>
-        <button class="tab-btn" onclick="switchTab('calendar')">
-            <span class="tab-icon">📅</span>Calendar
-        </button>
-        <button class="tab-btn" onclick="switchTab('stats')">
-            <span class="tab-icon">📈</span>Stats
-        </button>
+        <button class="tab-btn active" onclick="switchTab('game')"><span class="tab-icon">🎱</span>Game</button>
+        <button class="tab-btn" onclick="switchTab('calendar')"><span class="tab-icon">📅</span>Calendar</button>
+        <button class="tab-btn" onclick="switchTab('stats')"><span class="tab-icon">📈</span>Stats</button>
     </div>
 
     <script>
-        // --- データ管理 ---
         let rolls = []; let currentFrame = 1; let isGameFinished = false;
-        const STORAGE_KEY = 'bowlliard_history_v2'; // データ形式が変わるのでキーを変更
+        const STORAGE_KEY = 'bowlliard_history_v2';
         
-        // --- UI要素 ---
         const views = { game: document.getElementById('view-game'), calendar: document.getElementById('view-calendar'), stats: document.getElementById('view-stats') };
         const tabs = document.querySelectorAll('.tab-btn');
         const scoreboardEl = document.getElementById('scoreboard');
         const totalScoreEl = document.getElementById('total-score');
         const buttons = document.querySelectorAll('#keypad button');
+        const gameViewRateEl = document.getElementById('game-view-rate'); // Game画面の表示用
+        const historyListEl = document.getElementById('history-list');
         
-        // --- チャート用 ---
         let myChart = null;
 
-        // --- 初期化 ---
-        function init() {
-            renderScoreboard();
-            updateButtonState();
-            updateStats(); // 起動時にStatsを計算
-            renderCalendar(new Date());
-        }
+        function init() { renderScoreboard(); updateButtonState(); updateStats(); renderCalendar(new Date()); renderHistoryList(); }
 
-        // --- タブ切り替え ---
         function switchTab(tabName) {
-            // ビューの切り替え
             Object.values(views).forEach(el => el.classList.remove('active'));
             views[tabName].classList.add('active');
-            
-            // タブボタンの見た目
             tabs.forEach((btn, idx) => {
                 const names = ['game', 'calendar', 'stats'];
                 if(names[idx] === tabName) btn.classList.add('active');
                 else btn.classList.remove('active');
             });
-
-            // 画面ごとの更新処理
             if(tabName === 'stats') updateStats();
-            if(tabName === 'calendar') renderCalendar(currentCalDate);
+            if(tabName === 'calendar') renderCalendar(new Date());
         }
 
-        // --- 履歴保存 (詳細データ対応) ---
-        function getHistory() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
-        }
-
+        function getHistory() { const data = localStorage.getItem(STORAGE_KEY); return data ? JSON.parse(data) : []; }
         function saveHistory(score) {
-            const history = getHistory();
-            const now = new Date();
-            // 詳細なスタッツ計算用データを保存
-            // rolls配列をそのまま保存すれば後で解析可能
-            const gameData = {
-                score: score,
-                rolls: [...rolls], // 配列のコピー
-                timestamp: now.getTime(),
-                dateStr: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-            };
-            
+            const history = getHistory(); const now = new Date();
+            const gameData = { score: score, rolls: [...rolls], timestamp: now.getTime() };
             history.unshift(gameData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-            updateStats();
+            updateStats(); renderHistoryList();
+        }
+        function clearHistory() { if(confirm('全データを削除しますか？')) { localStorage.removeItem(STORAGE_KEY); updateStats(); renderCalendar(new Date()); renderHistoryList(); } }
+
+        function renderHistoryList() {
+            const history = getHistory();
+            historyListEl.innerHTML = '';
+            if(history.length === 0) return;
+            const recent5 = history.slice(0, 5);
+            recent5.forEach(h => {
+                const d = new Date(h.timestamp);
+                const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                const li = document.createElement('li'); li.className = 'history-item';
+                li.innerHTML = `<span class="h-date">${dateStr}</span><span class="h-score">${h.score}</span>`;
+                historyListEl.appendChild(li);
+            });
         }
 
-        function clearHistory() {
-            if(confirm('全ての履歴と統計データを削除しますか？')) {
-                localStorage.removeItem(STORAGE_KEY);
-                updateStats();
-                renderCalendar(currentCalDate);
-                alert('データを削除しました');
-            }
-        }
-
-        // --- 統計・グラフ表示 ---
+        // --- スタッツ計算ロジック（シュート率対応） ---
         function updateStats() {
             const history = getHistory();
-            
-            // 1. 直近アベレージ (Game画面用)
-            const recent5 = history.slice(0, 5);
-            const avg5 = recent5.length ? (recent5.reduce((a, b) => a + b.score, 0) / recent5.length).toFixed(0) : "---";
-            document.getElementById('game-view-avg').textContent = avg5;
-
-            // 2. 全体スタッツ (Stats画面用)
             if (history.length === 0) {
+                document.getElementById('stat-potting').textContent = "---%";
                 document.getElementById('stat-avg').textContent = "---";
                 document.getElementById('stat-high').textContent = "---";
                 document.getElementById('stat-strike').textContent = "---%";
                 document.getElementById('stat-spare').textContent = "---%";
+                gameViewRateEl.textContent = "---%";
                 if(myChart) myChart.destroy();
                 return;
             }
 
-            const totalScore = history.reduce((a, b) => a + b.score, 0);
-            const avgAll = (totalScore / history.length).toFixed(0);
-            const highScore = Math.max(...history.map(g => g.score));
+            const allTimeHigh = Math.max(...history.map(g => g.score));
+            const recent20 = history.slice(0, 20); // 最新20ゲーム
             
-            // ストライク・スペア率計算 (rollsデータがある場合のみ)
-            let totalFrames = 0;
-            let totalStrikes = 0;
+            // 平均点
+            const totalScore = recent20.reduce((a, b) => a + b.score, 0);
+            const avg20 = (totalScore / recent20.length).toFixed(0);
+            
+            // --- 詳細集計 ---
+            let totalFrames = 0; 
+            let totalStrikes = 0; 
             let totalSpares = 0;
+            let totalPotted = 0; // 入れた総数
+            let totalMisses = 0; // 外した回数
 
-            history.forEach(game => {
-                if(!game.rolls) return; // 古いデータ対策
-                // ゲームごとのフレーム解析
-                let r = game.rolls;
+            recent20.forEach(game => {
+                if(!game.rolls) return;
+                const r = game.rolls;
                 let idx = 0;
+
                 for(let f=1; f<=10; f++) {
                     if(idx >= r.length) break;
-                    totalFrames++;
+                    
+                    // Potting Rate計算用の集計
+                    // 基本ルール: ストライクやスペア（取り切り）以外は「1ミス」とカウントできる
+                    // 例: 7点→2点 (Open) -> 7個in/1miss -> 2個in/1miss = 計9個in/2miss
                     
                     let r1 = r[idx];
-                    let r2 = r[idx+1];
-
-                    if(r1 === 10) { // Strike
-                        totalStrikes++;
-                        idx += (f<10) ? 1 : 1; // 10フレの扱いは複雑だが簡易的に1つ進める（詳細解析はもっと複雑だが目安として）
-                        // 厳密な10フレ処理: X X X (3投) -> Strikeカウントは? 
-                        // 一般的なアプリでは「マーク率」として、10フレは最大3つのマークが可能だが、
-                        // ここでは「フレーム単位」で「1投目が10ならストライク」「2投で10ならスペア」とする
-                        if(f===10) {
-                            // 10フレ特例: 1投目Xならストライク
-                            // 2投目以降の計算は複雑になるので、ここでは簡易的に「1投目X=ストライク」のみカウント
-                            if(r1===10) { /*済*/ }
-                            // 10フレでXXと続いた場合の2つ目のX等はここではカウントしない（フレーム単位の率とするため）
-                             idx+=3; // 強制終了
+                    
+                    // 1投目
+                    if(r1 !== undefined) {
+                        totalPotted += r1;
+                        if(r1 === 10) { 
+                            // Strike (No Miss)
+                            totalStrikes++; 
+                            totalFrames++;
+                            if(f===10) { /* 10フレ処理は別途 */ }
+                            idx += (f<10) ? 1 : 1; 
+                        } else {
+                            // 10以外なら1ミス確定
+                            totalMisses++; 
+                            
+                            // 2投目
+                            let r2 = r[idx+1];
+                            if(r2 !== undefined) {
+                                totalPotted += r2;
+                                if(r1 + r2 === 10) {
+                                    // Spare (No Miss on 2nd shot)
+                                    totalSpares++;
+                                } else {
+                                    // Open (Miss on 2nd shot)
+                                    totalMisses++;
+                                }
+                                totalFrames++;
+                                idx += 2;
+                            } else {
+                                // 途中終了
+                                idx += 1;
+                            }
                         }
-                    } else if (r1 + r2 === 10) { // Spare
-                        totalSpares++;
-                        idx += 2;
-                    } else {
-                        idx += 2;
+                    }
+                    
+                    // 10フレの追加ボール分もカウント
+                    if(f===10) {
+                        // 既にidxは進んでいる。残りのボールを確認
+                        // 簡易ロジック: 配列の残りをすべてpottedに足し、10未満ならmissとする
+                        // ただし厳密な判定は複雑なので、ここでは「ボール数」だけ足す
+                        while(idx < r.length) {
+                             let extra = r[idx];
+                             totalPotted += extra;
+                             if(extra < 10) totalMisses++;
+                             idx++;
+                        }
                     }
                 }
             });
 
-            // ストライク・スペア率の表示
-            // ※簡易ロジックのため目安です
             const sRate = totalFrames ? ((totalStrikes / totalFrames) * 100).toFixed(1) : 0;
             const spRate = totalFrames ? ((totalSpares / totalFrames) * 100).toFixed(1) : 0;
+            
+            // シュート率 = 入れた数 / (入れた数 + 外した数)
+            const totalAttempts = totalPotted + totalMisses;
+            const pottingRate = totalAttempts ? ((totalPotted / totalAttempts) * 100).toFixed(1) : 0;
 
-            document.getElementById('stat-avg').textContent = avgAll;
-            document.getElementById('stat-high').textContent = highScore;
+            // 表示更新
+            document.getElementById('stat-potting').textContent = pottingRate + "%";
+            gameViewRateEl.textContent = pottingRate + "%"; // ゲーム画面にも表示
+            document.getElementById('stat-avg').textContent = avg20;
+            document.getElementById('stat-high').textContent = allTimeHigh;
             document.getElementById('stat-strike').textContent = sRate + "%";
             document.getElementById('stat-spare').textContent = spRate + "%";
 
-            // 3. グラフ描画
-            renderChart(history);
+            // グラフ
+            renderChart(recent20);
         }
 
-        function renderChart(history) {
+        function renderChart(data) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
-            
-            // データを古い順（時系列）に並べ替え、直近20件を取得
-            const chartData = [...history].reverse().slice(-20);
-            const labels = chartData.map((d, i) => i + 1); // 1, 2, 3...
+            const chartData = [...data].reverse();
+            const labels = chartData.map((d, i) => i + 1);
             const scores = chartData.map(d => d.score);
-
             if (myChart) myChart.destroy();
-
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Score',
-                        data: scores,
-                        borderColor: '#00e676',
-                        backgroundColor: 'rgba(0, 230, 118, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3, // 滑らかな線
-                        fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointRadius: 4
+                        label: 'Score', data: scores,
+                        borderColor: '#00e676', backgroundColor: 'rgba(0, 230, 118, 0.1)',
+                        borderWidth: 2, tension: 0.3, fill: true, pointBackgroundColor: '#fff', pointRadius: 4
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 300,
-                            grid: { color: '#333' },
-                            ticks: { color: '#888' }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { display: false } // X軸ラベルは消す（シンプル化）
-                        }
+                        y: { beginAtZero: true, max: 300, grid: { color: '#333' }, ticks: { color: '#888' } },
+                        x: { display: false }
                     }
                 }
             });
         }
 
-        // --- カレンダー処理 ---
-        let currentCalDate = new Date();
-
+        // --- カレンダー ---
         function changeMonth(diff) {
             currentCalDate.setMonth(currentCalDate.getMonth() + diff);
             renderCalendar(currentCalDate);
         }
-
+        let currentCalDate = new Date();
         function renderCalendar(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            
+            const year = date.getFullYear(); const month = date.getMonth();
             document.getElementById('cal-month-label').textContent = `${year} / ${month + 1}`;
-            
             const firstDay = new Date(year, month, 1).getDay();
             const lastDate = new Date(year, month + 1, 0).getDate();
-            
             const calBody = document.getElementById('calendar-body');
             calBody.innerHTML = '';
             
-            // 履歴からこの月の日別ベストスコアを抽出
             const history = getHistory();
-            const monthlyScores = {}; // "2023-12-01": 210
-            
+            const monthlyScores = {};
             history.forEach(h => {
                 const d = new Date(h.timestamp);
                 if(d.getFullYear() === year && d.getMonth() === month) {
                     const dayKey = d.getDate();
-                    if(!monthlyScores[dayKey] || h.score > monthlyScores[dayKey]) {
-                        monthlyScores[dayKey] = h.score;
-                    }
+                    if(!monthlyScores[dayKey] || h.score > monthlyScores[dayKey]) monthlyScores[dayKey] = h.score;
                 }
             });
 
-            // 空白セル
-            for(let i=0; i<firstDay; i++) {
-                const empty = document.createElement('div');
-                empty.className = 'day day-empty';
-                calBody.appendChild(empty);
-            }
-
-            // 日付セル
+            for(let i=0; i<firstDay; i++) { calBody.appendChild(document.createElement('div')); }
             const today = new Date();
             for(let d=1; d<=lastDate; d++) {
-                const dayCell = document.createElement('div');
-                dayCell.className = 'day';
-                dayCell.textContent = d;
-                
-                // 今日かどうか
-                if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
-                    dayCell.classList.add('today');
-                }
-
-                // スコアがあるか
+                const dayCell = document.createElement('div'); dayCell.className = 'day'; dayCell.textContent = d;
+                if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) dayCell.classList.add('today');
                 if(monthlyScores[d]) {
                     dayCell.classList.add('has-game');
-                    const scoreSpan = document.createElement('div');
-                    scoreSpan.className = 'day-score';
-                    scoreSpan.textContent = monthlyScores[d];
-                    dayCell.appendChild(scoreSpan);
+                    dayCell.innerHTML += `<div class="day-score">${monthlyScores[d]}</div>`;
                 }
-
                 calBody.appendChild(dayCell);
             }
         }
 
-        // --- ゲームロジック (スコア計算) ---
-        // ※バグ修正済みのロジックをそのまま使用
+        // --- スコアボード ---
         function renderScoreboard() {
             scoreboardEl.innerHTML = ''; let rollIndex = 0; let cumulativeScore = 0;
             for (let f = 1; f <= 10; f++) {
@@ -465,15 +435,10 @@
         }
 
         function calcFrameScore(frame, startIndex) { if (startIndex >= rolls.length) return null; if (frame === 10) { let r1 = rolls[startIndex], r2 = rolls[startIndex + 1], r3 = rolls[startIndex + 2]; if (r1 === undefined) return null; if (r1 === 10 || (r2 !== undefined && r1 + r2 === 10)) { if (r3 !== undefined) return r1 + r2 + r3; return null; } else { if (r2 !== undefined) return r1 + r2; return null; } } let r1 = rolls[startIndex], r2 = rolls[startIndex + 1], r3 = rolls[startIndex + 2]; if (r1 === 10) { if (r2 !== undefined && r3 !== undefined) return 10 + r2 + r3; return null; } if (r2 !== undefined) { if (r1 + r2 === 10) { if (r3 !== undefined) return 10 + r3; return null; } return r1 + r2; } return null; }
-        
         function addScore(pins) { if (isGameFinished) return; rolls.push(pins); updateGameStatus(); const currentScore = renderScoreboard(); updateButtonState(); if (currentFrame > 10) { isGameFinished = true; saveHistory(currentScore); renderScoreboard(); updateButtonState(); setTimeout(() => alert(`ゲーム終了！スコア: ${currentScore}`), 100); } }
-        
         function updateGameStatus() { let f = 1; let idx = 0; while (f <= 10 && idx < rolls.length) { let r1 = rolls[idx]; if (f < 10) { if (r1 === 10) { idx++; f++; } else { if (rolls[idx + 1] !== undefined) { idx += 2; f++; } else { break; } } } else { let r2 = rolls[idx + 1], r3 = rolls[idx + 2]; if (r2 === undefined) break; if (r1 === 10 || r1 + r2 === 10) { if (r3 !== undefined) { f++; idx += 3; } else { break; } } else { f++; idx += 2; } } } currentFrame = f; }
-        
         function updateButtonState() { if (currentFrame > 10) { for (let i = 0; i <= 10; i++) { buttons[i].disabled = true; } return; } let idx = 0; for(let f=1; f<currentFrame; f++) { if(rolls[idx] === 10) idx++; else idx += 2; } let frameRolls = []; for(let i=idx; i<rolls.length; i++) { frameRolls.push(rolls[i]); } let maxPins = 10; if (currentFrame < 10) { if (frameRolls.length === 1) maxPins = 10 - frameRolls[0]; } else { if (frameRolls.length === 1) { if (frameRolls[0] < 10) maxPins = 10 - frameRolls[0]; } else if (frameRolls.length === 2) { if (frameRolls[0] === 10 && frameRolls[1] < 10) maxPins = 10 - frameRolls[1]; else if (frameRolls[0] + frameRolls[1] === 10 || frameRolls[0] === 10 && frameRolls[1] === 10) maxPins = 10; } } for (let score = 0; score <= 10; score++) { const btn = buttons[score]; if (score > maxPins) btn.disabled = true; else btn.disabled = false; } }
-        
-        function undo() { if (isGameFinished) { isGameFinished = false; /* 履歴削除はしない(複雑になるため) */ } if (rolls.length > 0) { rolls.pop(); updateGameStatus(); renderScoreboard(); updateButtonState(); } }
-        
+        function undo() { if (isGameFinished) { isGameFinished = false; /*履歴操作なし*/ } if (rolls.length > 0) { rolls.pop(); updateGameStatus(); renderScoreboard(); updateButtonState(); } }
         function resetGame() { if(confirm('現在のゲームをリセットしますか？')) { rolls = []; currentFrame = 1; isGameFinished = false; renderScoreboard(); updateButtonState(); } }
 
         init();
