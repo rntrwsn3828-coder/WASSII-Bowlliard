@@ -258,38 +258,84 @@
                 });
             }
         }
+
+        // 修正箇所：描画処理
         function renderScoreboard() {
-            scoreboardEl.innerHTML = ''; let rollIndex = 0; let cumulativeScore = 0;
+            scoreboardEl.innerHTML = ''; 
+            let rollIndex = 0; 
+            let cumulativeScore = 0;
+
             for (let f = 1; f <= 10; f++) {
-                const frameDiv = document.createElement('div'); frameDiv.className = `frame ${f === currentFrame && !isGameFinished ? 'active' : ''}`;
-                const header = document.createElement('div'); header.className = 'frame-header'; header.textContent = f; frameDiv.appendChild(header);
-                const rollsDiv = document.createElement('div'); rollsDiv.className = 'rolls';
-                let frameScore = calcFrameScore(f, rollIndex); let r1 = rolls[rollIndex], r2 = rolls[rollIndex + 1], r3 = rolls[rollIndex + 2];
+                const frameDiv = document.createElement('div'); 
+                frameDiv.className = `frame ${f === currentFrame && !isGameFinished ? 'active' : ''}`;
+                
+                const header = document.createElement('div'); 
+                header.className = 'frame-header'; 
+                header.textContent = f; 
+                frameDiv.appendChild(header);
+
+                const rollsDiv = document.createElement('div'); 
+                rollsDiv.className = 'rolls';
+                
+                let frameScore = calcFrameScore(f, rollIndex); 
+                let r1 = rolls[rollIndex];
+                let r2 = rolls[rollIndex + 1];
+                let r3 = rolls[rollIndex + 2];
+                
                 if (f < 10) {
                     if (r1 !== undefined) {
                         rollsDiv.innerHTML += `<div class="roll-box">${r1 === 10 ? 'X' : (r1 === 0 ? '-' : r1)}</div>`;
-                        if (r1 === 10) { rollsDiv.innerHTML += `<div class="roll-box"></div>`; rollIndex++; } 
-                        else { if (r2 !== undefined) { rollsDiv.innerHTML += `<div class="roll-box">${(r1 + r2 === 10) ? '/' : (r2 === 0 ? '-' : r2)}</div>`; rollIndex += 2; } }
+                        if (r1 === 10) { 
+                            rollsDiv.innerHTML += `<div class="roll-box"></div>`; 
+                            rollIndex++; 
+                        } else { 
+                            if (r2 !== undefined) { 
+                                rollsDiv.innerHTML += `<div class="roll-box">${(r1 + r2 === 10) ? '/' : (r2 === 0 ? '-' : r2)}</div>`; 
+                                rollIndex += 2; 
+                            } else {
+                                // 【重要修正】2投目待ちの状態。
+                                // ここでindexを進めずにループを放置すると、次のフレーム(f+1)で
+                                // また同じrollIndex(r1)を参照して表示してしまう。
+                                // そのため、強制的に「データなし」と認識させるため index を飛ばす。
+                                rollIndex = 9999; 
+                            }
+                        }
                     }
                 } else {
+                    // 10フレーム目
                     if (r1 !== undefined) {
                         rollsDiv.innerHTML += `<div class="roll-box">${r1 === 10 ? 'X' : (r1 === 0 ? '-' : r1)}</div>`;
                         if (r2 !== undefined) {
-                            let r2Text = r2; if (r1 === 10 && r2 === 10) r2Text = 'X'; else if (r1 !== 10 && r1 + r2 === 10) r2Text = '/'; else if (r2 === 0) r2Text = '-';
+                            let r2Text = r2; 
+                            if (r1 === 10 && r2 === 10) r2Text = 'X'; 
+                            else if (r1 !== 10 && r1 + r2 === 10) r2Text = '/'; 
+                            else if (r2 === 0) r2Text = '-';
                             rollsDiv.innerHTML += `<div class="roll-box">${r2Text}</div>`;
                             if (r3 !== undefined) {
-                                let r3Text = r3; if (r3 === 10) r3Text = 'X'; else if (r1 === 10 && r2 !== 10 && r2 + r3 === 10) r3Text = '/'; else if (r3 === 0) r3Text = '-';
+                                let r3Text = r3; 
+                                if (r3 === 10) r3Text = 'X'; 
+                                else if (r1 === 10 && r2 !== 10 && r2 + r3 === 10) r3Text = '/'; 
+                                else if (r3 === 0) r3Text = '-';
                                 rollsDiv.innerHTML += `<div class="roll-box">${r3Text}</div>`;
                             }
                         }
                     }
                 }
-                frameDiv.appendChild(rollsDiv); const scoreDiv = document.createElement('div'); scoreDiv.className = 'frame-score';
-                if (frameScore !== null) { cumulativeScore += frameScore; scoreDiv.textContent = cumulativeScore; }
-                frameDiv.appendChild(scoreDiv); scoreboardEl.appendChild(frameDiv);
+                frameDiv.appendChild(rollsDiv); 
+
+                const scoreDiv = document.createElement('div'); 
+                scoreDiv.className = 'frame-score';
+                if (frameScore !== null) { 
+                    cumulativeScore += frameScore; 
+                    scoreDiv.textContent = cumulativeScore; 
+                }
+                frameDiv.appendChild(scoreDiv); 
+                scoreboardEl.appendChild(frameDiv);
             }
-            totalScoreEl.textContent = cumulativeScore; return cumulativeScore;
+            totalScoreEl.textContent = cumulativeScore; 
+            return cumulativeScore;
         }
+
         function calcFrameScore(frame, startIndex) {
             if (startIndex >= rolls.length) return null;
             if (frame === 10) {
