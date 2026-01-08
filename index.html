@@ -165,6 +165,13 @@
         </div>
         <div style="margin-bottom:10px; font-size:0.9rem; color:#ccc;">Score History</div>
         <div class="chart-container"><canvas id="scoreChart"></canvas></div>
+        
+        <div style="margin-top:20px; text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center;">
+             <button id="btn-send-ranking" onclick="sendToRanking()" style="background:var(--active-bg); border:1px solid var(--accent-color); color:#fff; font-size:1rem; font-weight:bold; height:50px; width:auto; padding:0 30px; border-radius:25px; box-shadow: 0 4px 10px rgba(0,230,118,0.3);">
+                 🏆 ランキングに登録
+             </button>
+        </div>
+
         <div style="margin-top:20px; text-align:center;">
              <button onclick="clearHistory()" style="background:transparent; border:1px solid #444; color:#666; font-size:0.8rem; height:30px; width:auto; padding:0 20px;">全データを消去</button>
         </div>
@@ -193,6 +200,9 @@
     <script>
         let rolls = []; let currentFrame = 1; let isGameFinished = false;
         const STORAGE_KEY = 'bowlliard_history_v2';
+        
+        // ★ご指定のGAS URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby77tDfJHCo12Bjft5uyzWjyQnVlrBrfXhkUaR4KJLiz6ezYWG-ivF8GgcBHZvZy3ds/exec"; 
         
         const views = { game: document.getElementById('view-game'), calendar: document.getElementById('view-calendar'), stats: document.getElementById('view-stats') };
         const tabs = document.querySelectorAll('.tab-btn');
@@ -256,7 +266,49 @@
         function closeModal() { modalEl.classList.remove('show'); }
         modalEl.onclick = function(e) { if(e.target === modalEl) closeModal(); }
 
-        // --- 修正版: スコアボード描画ロジック ---
+        // --- GAS連携: ランキング送信機能 ---
+        function sendToRanking() {
+            const history = getHistory();
+            if (history.length === 0) { alert("送信するデータがありません。"); return; }
+            
+            const lastGame = history[0]; 
+            const rate = calculateShootRate(lastGame.rolls);
+            const currentAvg = document.getElementById('stat-avg').textContent; // アベレージ取得
+
+            const playerName = prompt("ランキングに登録する名前を入力してください:", localStorage.getItem('last_player_name') || "");
+            if (!playerName) return;
+
+            localStorage.setItem('last_player_name', playerName);
+
+            if(!confirm(`${playerName} さん\nスコア: ${lastGame.score}\nシュート率: ${rate}%\nAvg: ${currentAvg}\n\nこのスコアをランキングに登録しますか？`)) return;
+
+            const sendBtn = document.getElementById('btn-send-ranking');
+            const originalText = sendBtn.innerText;
+            sendBtn.innerText = "送信中...";
+            sendBtn.disabled = true;
+
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: playerName,
+                    score: lastGame.score,
+                    rate: rate,
+                    avg: currentAvg
+                })
+            }).then(() => {
+                alert("登録完了！スプレッドシートを確認してください。");
+                sendBtn.innerText = originalText;
+                sendBtn.disabled = false;
+            }).catch(err => {
+                alert("送信エラー: " + err);
+                sendBtn.innerText = originalText;
+                sendBtn.disabled = false;
+            });
+        }
+
+        // --- スコアボード描画 (10フレ3枠対応) ---
         function renderScoreboardToTarget(targetRolls, targetEl) {
             targetEl.innerHTML = ''; 
             let rollIndex = 0; 
@@ -280,8 +332,7 @@
 
                     let box2 = document.createElement('div'); box2.className = 'roll-box';
                     if (r1 === 10) {
-                        rollIndex++; // ストライクは1球で次へ
-                        // ストライク時の空枠表示（デザイン調整）
+                        rollIndex++;
                         let empty = document.createElement('div'); empty.className = 'roll-box'; rollsDiv.appendChild(empty);
                     } else {
                         if (r1 !== undefined) {
@@ -289,26 +340,24 @@
                                 box2.textContent = (r1 + r2 === 10) ? '/' : (r2 === 0 ? '-' : r2);
                                 rollIndex += 2;
                             } else {
-                                rollIndex = 9999; // 2投目待ち
+                                rollIndex = 9999; 
                             }
                             rollsDiv.appendChild(box2);
                         } else {
-                            rollIndex = 9999; // 1投目待ち
+                            rollIndex = 9999;
                         }
                     }
                 } else {
-                    // --- 10フレーム（3枠強制表示） ---
+                    // 10フレーム (3枠表示)
                     let localIdx = rollIndex;
                     let f10_r1 = targetRolls[localIdx];
                     let f10_r2 = targetRolls[localIdx+1];
                     let f10_r3 = targetRolls[localIdx+2];
 
-                    // 1投目
                     let b1 = document.createElement('div'); b1.className = 'roll-box';
                     if(f10_r1 !== undefined) b1.textContent = (f10_r1 === 10 ? 'X' : (f10_r1 === 0 ? '-' : f10_r1));
                     rollsDiv.appendChild(b1);
 
-                    // 2投目
                     let b2 = document.createElement('div'); b2.className = 'roll-box';
                     if(f10_r2 !== undefined) {
                         if(f10_r1 === 10) b2.textContent = (f10_r2 === 10 ? 'X' : (f10_r2 === 0 ? '-' : f10_r2));
@@ -316,7 +365,6 @@
                     }
                     rollsDiv.appendChild(b2);
 
-                    // 3投目
                     let b3 = document.createElement('div'); b3.className = 'roll-box';
                     if(f10_r3 !== undefined) {
                          if(f10_r3 === 10) b3.textContent = 'X';
@@ -325,7 +373,6 @@
                     }
                     rollsDiv.appendChild(b3);
 
-                    // 次の計算のためにindexを進める（ロジック用）
                     if(f10_r1 !== undefined) {
                         if(f10_r1 === 10 || f10_r1 + (f10_r2||0) === 10) {
                              if(f10_r3 !== undefined) rollIndex += 3;
@@ -344,7 +391,7 @@
             }
         }
 
-        // --- 修正版: スコア計算ロジック（10フレ待ち対応） ---
+        // --- スコア計算ロジック ---
         function calcFrameScoreWithRolls(frame, startIndex, targetRolls) {
             if (startIndex >= targetRolls.length) return null; let rollsData = targetRolls;
             if (frame === 10) {
@@ -462,7 +509,6 @@
             }
         }
         
-        // --- 修正版: 進行状況判定（10フレの継続条件を厳密化） ---
         function updateGameStatus() { 
             let f = 1; let idx = 0; 
             while (f <= 10 && idx < rolls.length) { 
@@ -471,21 +517,19 @@
                     if (r1 === 10) { idx++; f++; } 
                     else { if (rolls[idx + 1] !== undefined) { idx += 2; f++; } else { break; } } 
                 } else { 
-                    // 10フレーム判定
                     let r2 = rolls[idx + 1], r3 = rolls[idx + 2]; 
-                    if (r2 === undefined) break; // 2投目待ち
-                    if (r1 === 10 || r1 + r2 === 10) { // Strike or Spare
-                        if (r3 !== undefined) { f++; idx += 3; } // 3投完了で終了
-                        else { break; } // 3投目待ち
+                    if (r2 === undefined) break; 
+                    if (r1 === 10 || r1 + r2 === 10) { 
+                        if (r3 !== undefined) { f++; idx += 3; } 
+                        else { break; } 
                     } else { 
-                        f++; idx += 2; // Openで終了
+                        f++; idx += 2; 
                     } 
                 } 
             } 
             currentFrame = f; 
         }
         
-        // --- 修正版: ボタン制御（3投目の残りピン数対応） ---
         function updateButtonState() {
             if (isGameFinished) { for (let i = 0; i <= 10; i++) { buttons[i].disabled = false; } return; }
             let idx = 0; for(let f=1; f<currentFrame; f++) { if(rolls[idx] === 10) idx++; else idx += 2; }
