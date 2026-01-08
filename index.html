@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BostonBowlliardRanking</title>
+    <title>BostonBowlliard Rankings</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
@@ -328,7 +328,7 @@
             });
         }
 
-// ★日付表示を完璧にする修正版
+        // ★★★ 修正済み：どんな形式の日付がきても綺麗に表示する ★★★
         function openGameDetail(gameData) {
             if(!gameData || !gameData.rolls) {
                 alert("詳細データがありません。");
@@ -338,14 +338,14 @@
             const dateEl = document.getElementById('modal-date');
             const ts = gameData.timestamp;
 
-            // 数値(ローカル)でも、文字(ランキング)でも、まずは日付として変換を試みる
+            // 数値(ローカル)でも、文字(ランキングのISO形式など)でも、まずは日付として変換を試みる
             const d = new Date(ts);
             
             if (!isNaN(d.getTime())) {
                 // うまく日付に変換できた場合 → 綺麗に整形して表示
                 dateEl.textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
             } else {
-                // 日付として読めなかった場合 → そのまま文字として表示
+                // 万が一読めなかった場合 → そのまま文字として表示
                 dateEl.textContent = ts;
             }
 
