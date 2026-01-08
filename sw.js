@@ -1,22 +1,16 @@
-const CACHE_NAME = 'bowlliard-v1';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
-];
+// Service Worker Minimal Configuration
+// インストールはするが、キャッシュは制御せず全てネットワークを通す
+// これにより起動エラーを防ぐ
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-  );
+  // キャッシュ戦略を行わず、そのままネットワークへリクエストを流す
+  event.respondWith(fetch(event.request));
 });
