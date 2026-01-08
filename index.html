@@ -328,7 +328,7 @@
             });
         }
 
-        // ★修正ポイント：日付型判定ロジックでNaNを防ぐ
+// ★日付表示を完璧にする修正版
         function openGameDetail(gameData) {
             if(!gameData || !gameData.rolls) {
                 alert("詳細データがありません。");
@@ -338,12 +338,14 @@
             const dateEl = document.getElementById('modal-date');
             const ts = gameData.timestamp;
 
-            if (typeof ts === 'number') {
-                // ローカル履歴（数値）の場合
-                const d = new Date(ts);
+            // 数値(ローカル)でも、文字(ランキング)でも、まずは日付として変換を試みる
+            const d = new Date(ts);
+            
+            if (!isNaN(d.getTime())) {
+                // うまく日付に変換できた場合 → 綺麗に整形して表示
                 dateEl.textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
             } else {
-                // ランキング経由（文字）の場合
+                // 日付として読めなかった場合 → そのまま文字として表示
                 dateEl.textContent = ts;
             }
 
