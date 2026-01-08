@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bowlliard Analytics Pro+</title>
+    <title>Bowlliard Ultimate</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
@@ -11,19 +11,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* --- デザイン設定 --- */
+        /* --- デザイン設定 (基本は前回と同じ) --- */
         :root { --bg-color: #121212; --card-bg: #1e1e1e; --active-bg: #2e7d32; --accent-color: #00e676; --text-main: #ffffff; --text-sub: #b0bec5; --btn-bg: #37474f; --btn-text: #ffffff; --btn-disabled: #263238; --danger: #ef5350; --warn: #ffca28; }
         * { box-sizing: border-box; touch-action: manipulation; }
         body { font-family: "Roboto", sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* ヘッダー */
         header { width: 100%; max-width: 1000px; background: var(--card-bg); padding: 10px 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-bottom: 2px solid var(--active-bg); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .header-title h1 { margin: 0; font-size: 1.2rem; color: var(--text-sub); font-weight: normal; }
         .total-score-box { text-align: right; }
         .total-label { font-size: 0.7rem; color: var(--text-sub); display: block; }
         .total-value { font-size: 2.2rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
 
-        /* スコアボード */
+        /* スコアボード（共通スタイル） */
         .scoreboard { width: 100%; max-width: 1000px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 15px; flex-shrink: 0; }
         .frame { background: var(--card-bg); border-radius: 6px; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; min-height: 65px; position: relative; }
         .frame.active { background: var(--active-bg); border: 1px solid var(--accent-color); transform: scale(1.02); z-index: 5; }
@@ -34,20 +33,17 @@
         .frame-score { font-size: 1.4rem; text-align: center; font-weight: 800; color: var(--text-main); height: 28px; line-height: 28px; }
         .frame.active .frame-score { color: #fff; }
 
-        /* レイアウト */
+        /* メインレイアウト */
         .view { display: none; flex-direction: column; width: 100%; max-width: 1000px; padding-bottom: 80px; }
         .view.active { display: flex; }
         .main-content { width: 100%; display: flex; flex-direction: column; gap: 15px; }
 
-        /* スマホ縦用：操作パネルを上に */
+        /* 操作パネル */
         .controls-wrapper { background: var(--card-bg); padding: 10px; border-radius: 12px; order: 1; }
         .info-panel { background: var(--card-bg); border-radius: 12px; padding: 15px; order: 2; }
 
         /* Stats画面 */
-        .stats-main-card {
-            background: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--accent-color);
-            margin-bottom: 10px;
-        }
+        .stats-main-card { background: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--accent-color); margin-bottom: 10px; }
         .stats-main-value { font-size: 2.5rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
@@ -64,16 +60,44 @@
         .day { background: var(--card-bg); height: 50px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.9rem; position: relative; }
         .day.today { border: 1px solid var(--accent-color); }
         .day.has-game { background: #1b3323; }
-        .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; }
+        .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; cursor: pointer; text-decoration: underline; }
         .day-empty { background: transparent; }
         
-        /* タブバー */
+        /* リストと履歴 */
+        .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .history-item { background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; }
+        .history-item:hover { background: rgba(255,255,255,0.1); }
+        .history-item:first-child { border-left: 3px solid var(--accent-color); background: rgba(0, 230, 118, 0.05); }
+        .h-date { color: var(--text-sub); font-size: 0.8rem; }
+        .h-score { font-weight: bold; font-size: 1.1rem; color: var(--accent-color); }
+
+        /* --- 【新規追加】詳細ポップアップ（モーダル） --- */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 10px;
+            backdrop-filter: blur(5px);
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background-color: #222; border: 1px solid #444; border-radius: 12px; width: 100%; max-width: 800px;
+            padding: 20px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal-title { font-size: 1.1rem; color: #fff; font-weight: bold; }
+        .modal-close { background: transparent; color: #fff; font-size: 2rem; border: none; cursor: pointer; line-height: 1; height: auto; padding: 0; }
+        .modal-score-display { font-size: 2rem; color: var(--accent-color); font-weight: 800; }
+        
+        /* モーダル内のスコアボード調整 */
+        .modal .scoreboard { margin-bottom: 0; }
+        .modal .frame { min-height: 70px; background: #333; }
+        .modal .frame-score { color: #fff; }
+
+        /* その他UI */
         .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #111; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
         .tab-btn { background: transparent; border: none; color: #666; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: center; width: 100%; }
         .tab-btn.active { color: var(--accent-color); background: rgba(255,255,255,0.05); }
         .tab-icon { font-size: 1.2rem; }
 
-        /* ボタン */
         .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         button { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 0; height: 55px; font-size: 1.3rem; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: all 0.1s; }
         button:active { transform: translateY(2px); box-shadow: none; background: var(--accent-color); color: #000; }
@@ -82,15 +106,9 @@
         .btn-reset { background: #3e2723; color: var(--danger); font-size: 1rem; grid-column: span 2; }
         .btn-undo { background: #333; color: var(--warn); font-size: 1rem; grid-column: span 2; border: 1px solid var(--warn); }
         .btn-clear-history { background: transparent; border: 1px solid #444; color: #666; font-size: 0.8rem; margin-top: 10px; width: 100%; height: 30px; box-shadow: none; }
-        
         .avg-label { color: var(--text-sub); font-size: 0.9rem; }
         .avg-value { color: #fff; font-weight: bold; font-size: 1.2rem; }
         .stats-bar { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
-        .history-item { background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 0.9rem; }
-        .history-item:first-child { border-left: 3px solid var(--accent-color); background: rgba(0, 230, 118, 0.05); }
-        .h-date { color: var(--text-sub); font-size: 0.8rem; }
-        .h-score { font-weight: bold; font-size: 1.1rem; }
 
         @media (min-width: 768px) {
             .scoreboard { grid-template-columns: repeat(10, 1fr); }
@@ -119,7 +137,7 @@
                     <span class="avg-value" id="current-game-rate">---%</span>
                 </div>
                 <div id="history-section">
-                    <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History</div>
+                    <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History (タップで詳細)</div>
                     <ul class="history-list" id="history-list"></ul>
                 </div>
             </div>
@@ -146,34 +164,25 @@
             <div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div><div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
         </div>
         <div class="calendar-grid" id="calendar-body"></div>
+        <div style="margin-top:20px; font-size:0.8rem; color:#888; text-align:center;">
+            *日付の下のスコアをタップすると<br>その日のベストゲームの詳細が見れます
+        </div>
     </div>
 
     <div id="view-stats" class="view">
         <header><div class="header-title"><h1>Analysis (Last 20)</h1></div></header>
-        
         <div class="stats-main-card">
             <span class="stat-label">シュート率 (過去20ゲーム)</span>
             <span class="stats-main-value" id="stat-potting">---%</span>
         </div>
-
         <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-label">Average</span>
-                <span class="stat-value" id="stat-avg">---</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label" style="color:#ffca28">High Score</span>
-                <span class="stat-value" id="stat-high" style="color:#ffca28">---</span>
-            </div>
+            <div class="stat-card"><span class="stat-label">Average</span><span class="stat-value" id="stat-avg">---</span></div>
+            <div class="stat-card"><span class="stat-label" style="color:#ffca28">High Score</span><span class="stat-value" id="stat-high" style="color:#ffca28">---</span></div>
             <div class="stat-card"><span class="stat-label">Strike Rate</span><span class="stat-value" id="stat-strike">---%</span></div>
             <div class="stat-card"><span class="stat-label">Spare Rate</span><span class="stat-value" id="stat-spare">---%</span></div>
         </div>
-
         <div style="margin-bottom:10px; font-size:0.9rem; color:#ccc;">Score History</div>
-        <div class="chart-container">
-            <canvas id="scoreChart"></canvas>
-        </div>
-        
+        <div class="chart-container"><canvas id="scoreChart"></canvas></div>
         <div style="margin-top:20px; text-align:center;">
              <button onclick="clearHistory()" style="background:transparent; border:1px solid #444; color:#666; font-size:0.8rem; height:30px; width:auto; padding:0 20px;">全データを消去</button>
         </div>
@@ -185,6 +194,23 @@
         <button class="tab-btn" onclick="switchTab('stats')"><span class="tab-icon">📈</span>Stats</button>
     </div>
 
+    <div id="game-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div id="modal-date" style="font-size:0.8rem; color:#aaa;"></div>
+                    <div class="modal-title">Game Details</div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div style="text-align:center; margin-bottom:20px;">
+                <span class="modal-score-display" id="modal-score">0</span>
+                <div style="font-size:0.9rem; color:#ccc; margin-top:5px;">シュート率: <span id="modal-rate">0%</span></div>
+            </div>
+            <div class="scoreboard" id="modal-scoreboard"></div>
+        </div>
+    </div>
+
     <script>
         let rolls = []; let currentFrame = 1; let isGameFinished = false;
         const STORAGE_KEY = 'bowlliard_history_v2';
@@ -194,8 +220,10 @@
         const scoreboardEl = document.getElementById('scoreboard');
         const totalScoreEl = document.getElementById('total-score');
         const buttons = document.querySelectorAll('#keypad button');
-        const currentGameRateEl = document.getElementById('current-game-rate'); // 今回のシュート率表示用
+        const currentGameRateEl = document.getElementById('current-game-rate');
         const historyListEl = document.getElementById('history-list');
+        const modalEl = document.getElementById('game-detail-modal');
+        const modalScoreboardEl = document.getElementById('modal-scoreboard');
         
         let myChart = null;
 
@@ -232,222 +260,61 @@
                 const d = new Date(h.timestamp);
                 const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                 const li = document.createElement('li'); li.className = 'history-item';
+                // ★クリックで詳細を開く
+                li.onclick = function() { openGameDetail(h); };
                 li.innerHTML = `<span class="h-date">${dateStr}</span><span class="h-score">${h.score}</span>`;
                 historyListEl.appendChild(li);
             });
         }
 
-        // --- シュート率計算ロジック（共通関数） ---
-        function calculateShootRate(rollsData) {
-            let totalPotted = 0; 
-            let totalMisses = 0;
-            let idx = 0;
-            const r = rollsData;
+        // --- モーダル制御 ---
+        function openGameDetail(gameData) {
+            if(!gameData || !gameData.rolls) return;
             
-            // フレーム進行をシミュレート
-            for(let f=1; f<=10; f++) {
-                if(idx >= r.length) break;
-
-                let r1 = r[idx];
-                
-                // 1投目
-                if(r1 !== undefined) {
-                    totalPotted += r1;
-                    if(r1 === 10) { 
-                        // Strike (No Miss)
-                        if(f===10) { /* 10フレは特別 */ }
-                        idx += (f<10) ? 1 : 1; 
-                    } else {
-                        // 10以外なら1ミス確定
-                        totalMisses++; 
-                        
-                        // 2投目
-                        let r2 = r[idx+1];
-                        if(r2 !== undefined) {
-                            totalPotted += r2;
-                            if(r1 + r2 !== 10) {
-                                // Open (Miss on 2nd shot)
-                                totalMisses++;
-                            }
-                            idx += 2;
-                        } else {
-                            // 途中
-                            idx += 1;
-                        }
-                    }
-                }
-                
-                // 10フレの追加ボール
-                if(f===10) {
-                    while(idx < r.length) {
-                        let extra = r[idx];
-                        totalPotted += extra;
-                        if(extra < 10) totalMisses++;
-                        idx++;
-                    }
-                }
-            }
-
-            const totalAttempts = totalPotted + totalMisses;
-            return totalAttempts ? ((totalPotted / totalAttempts) * 100).toFixed(1) : 0;
-        }
-
-        // --- 現在のゲームのシュート率を更新 ---
-        function updateCurrentGameStats() {
-            if(rolls.length === 0) {
-                currentGameRateEl.textContent = "---%";
-            } else {
-                const rate = calculateShootRate(rolls);
-                currentGameRateEl.textContent = rate + "%";
-            }
-        }
-
-        // --- 過去の統計更新 ---
-        function updateStats() {
-            const history = getHistory();
-            if (history.length === 0) {
-                document.getElementById('stat-potting').textContent = "---%";
-                document.getElementById('stat-avg').textContent = "---";
-                document.getElementById('stat-high').textContent = "---";
-                document.getElementById('stat-strike').textContent = "---%";
-                document.getElementById('stat-spare').textContent = "---%";
-                if(myChart) myChart.destroy();
-                return;
-            }
-
-            const allTimeHigh = Math.max(...history.map(g => g.score));
-            const recent20 = history.slice(0, 20); // 最新20ゲーム
+            const d = new Date(gameData.timestamp);
+            document.getElementById('modal-date').textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            document.getElementById('modal-score').textContent = gameData.score;
+            document.getElementById('modal-rate').textContent = calculateShootRate(gameData.rolls) + "%";
             
-            // 平均点
-            const totalScore = recent20.reduce((a, b) => a + b.score, 0);
-            const avg20 = (totalScore / recent20.length).toFixed(0);
+            // モーダル内にスコアボードを描画（引数でrollsを渡す特別モード）
+            renderScoreboardToTarget(gameData.rolls, modalScoreboardEl);
             
-            // 平均シュート率（ゲームごとの率の平均ではなく、全投球からの率とする）
-            // 全ゲームのrollsを結合して計算するのは大変なので、ゲームごとのデータを積算
-            // ※正確には全投球データから再計算すべきだが、ここでは簡易的に「各ゲームのロールデータを合体」させる
-            let allRolls = [];
-            recent20.forEach(g => { if(g.rolls) allRolls = allRolls.concat(g.rolls); });
-            // ※ただしフレーム構造が混ざると正しく計算できないため、各ゲームごとに計算して平均をとるほうが安全
-            // ここでは「各ゲームのシュート率の平均」を表示する
-            let totalRate = 0;
-            let validGames = 0;
-            recent20.forEach(g => {
-                if(g.rolls && g.rolls.length > 0) {
-                    totalRate += parseFloat(calculateShootRate(g.rolls));
-                    validGames++;
-                }
-            });
-            const avgPotting = validGames ? (totalRate / validGames).toFixed(1) : 0;
+            modalEl.classList.add('show');
+        }
 
-            // ストライク・スペア率
-            let totalFrames = 0; let totalStrikes = 0; let totalSpares = 0;
-            recent20.forEach(game => {
-                if(!game.rolls) return;
-                let r = game.rolls; let idx = 0;
-                for(let f=1; f<=10; f++) {
-                    if(idx >= r.length) break;
-                    totalFrames++;
-                    let r1 = r[idx]; let r2 = r[idx+1];
-                    if(r1 === 10) { 
-                        totalStrikes++; 
-                        if(f===10) idx+=3; else idx++;
-                    } else if (r1 + r2 === 10) { 
-                        totalSpares++; idx += 2; 
-                    } else { idx += 2; }
-                }
-            });
+        function closeModal() {
+            modalEl.classList.remove('show');
+        }
 
-            const sRate = totalFrames ? ((totalStrikes / totalFrames) * 100).toFixed(1) : 0;
-            const spRate = totalFrames ? ((totalSpares / totalFrames) * 100).toFixed(1) : 0;
+        // モーダルの背景クリックで閉じる
+        modalEl.onclick = function(e) {
+            if(e.target === modalEl) closeModal();
+        }
+
+        // --- 汎用スコアボード描画 (メイン画面とモーダル画面でロジック共有) ---
+        function renderScoreboardToTarget(targetRolls, targetEl) {
+            targetEl.innerHTML = ''; 
+            let rollIndex = 0; 
+            let cumulativeScore = 0;
             
-            document.getElementById('stat-potting').textContent = avgPotting + "%";
-            document.getElementById('stat-avg').textContent = avg20;
-            document.getElementById('stat-high').textContent = allTimeHigh;
-            document.getElementById('stat-strike').textContent = sRate + "%";
-            document.getElementById('stat-spare').textContent = spRate + "%";
-
-            renderChart(recent20);
-        }
-
-        function renderChart(data) {
-            const ctx = document.getElementById('scoreChart').getContext('2d');
-            const chartData = [...data].reverse();
-            const labels = chartData.map((d, i) => i + 1);
-            const scores = chartData.map(d => d.score);
-            if (myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Score', data: scores,
-                        borderColor: '#00e676', backgroundColor: 'rgba(0, 230, 118, 0.1)',
-                        borderWidth: 2, tension: 0.3, fill: true, pointBackgroundColor: '#fff', pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, max: 300, grid: { color: '#333' }, ticks: { color: '#888' } },
-                        x: { display: false }
-                    }
-                }
-            });
-        }
-
-        // --- カレンダー ---
-        function changeMonth(diff) {
-            currentCalDate.setMonth(currentCalDate.getMonth() + diff);
-            renderCalendar(currentCalDate);
-        }
-        let currentCalDate = new Date();
-        function renderCalendar(date) {
-            const year = date.getFullYear(); const month = date.getMonth();
-            document.getElementById('cal-month-label').textContent = `${year} / ${month + 1}`;
-            const firstDay = new Date(year, month, 1).getDay();
-            const lastDate = new Date(year, month + 1, 0).getDate();
-            const calBody = document.getElementById('calendar-body');
-            calBody.innerHTML = '';
-            
-            const history = getHistory();
-            const monthlyScores = {};
-            history.forEach(h => {
-                const d = new Date(h.timestamp);
-                if(d.getFullYear() === year && d.getMonth() === month) {
-                    const dayKey = d.getDate();
-                    if(!monthlyScores[dayKey] || h.score > monthlyScores[dayKey]) monthlyScores[dayKey] = h.score;
-                }
-            });
-
-            for(let i=0; i<firstDay; i++) { calBody.appendChild(document.createElement('div')); }
-            const today = new Date();
-            for(let d=1; d<=lastDate; d++) {
-                const dayCell = document.createElement('div'); dayCell.className = 'day'; dayCell.textContent = d;
-                if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) dayCell.classList.add('today');
-                if(monthlyScores[d]) {
-                    dayCell.classList.add('has-game');
-                    dayCell.innerHTML += `<div class="day-score">${monthlyScores[d]}</div>`;
-                }
-                calBody.appendChild(dayCell);
-            }
-        }
-
-        // --- スコアボード ---
-        function renderScoreboard() {
-            scoreboardEl.innerHTML = ''; let rollIndex = 0; let cumulativeScore = 0;
             for (let f = 1; f <= 10; f++) {
-                const frameDiv = document.createElement('div'); frameDiv.className = `frame ${f === currentFrame && !isGameFinished ? 'active' : ''}`;
+                const frameDiv = document.createElement('div'); 
+                frameDiv.className = 'frame'; // activeクラスはつけない（過去データなので）
+                
                 const header = document.createElement('div'); header.className = 'frame-header'; header.textContent = f; frameDiv.appendChild(header);
                 const rollsDiv = document.createElement('div'); rollsDiv.className = 'rolls';
-                let frameScore = calcFrameScore(f, rollIndex); let r1 = rolls[rollIndex], r2 = rolls[rollIndex + 1], r3 = rolls[rollIndex + 2];
+                
+                // スコア計算（targetRollsを使用）
+                let frameScore = calcFrameScoreWithRolls(f, rollIndex, targetRolls); 
+                let r1 = targetRolls[rollIndex], r2 = targetRolls[rollIndex + 1], r3 = targetRolls[rollIndex + 2];
+
                 if (f < 10) {
                     if (r1 !== undefined) {
                         rollsDiv.innerHTML += `<div class="roll-box">${r1 === 10 ? 'X' : (r1 === 0 ? '-' : r1)}</div>`;
                         if (r1 === 10) { rollsDiv.innerHTML += `<div class="roll-box"></div>`; rollIndex++; } 
                         else { 
                             if (r2 !== undefined) { rollsDiv.innerHTML += `<div class="roll-box">${(r1 + r2 === 10) ? '/' : (r2 === 0 ? '-' : r2)}</div>`; rollIndex += 2; } 
-                            else { rollIndex = 9999; } 
+                            else { rollIndex = 9999; } // データ切れ対策
                         }
                     }
                 } else {
@@ -462,21 +329,166 @@
                 }
                 frameDiv.appendChild(rollsDiv); const scoreDiv = document.createElement('div'); scoreDiv.className = 'frame-score';
                 if (frameScore !== null) { cumulativeScore += frameScore; scoreDiv.textContent = cumulativeScore; }
-                frameDiv.appendChild(scoreDiv); scoreboardEl.appendChild(frameDiv);
+                frameDiv.appendChild(scoreDiv); targetEl.appendChild(frameDiv);
             }
-            totalScoreEl.textContent = cumulativeScore; return cumulativeScore;
         }
 
-        function calcFrameScore(frame, startIndex) { if (startIndex >= rolls.length) return null; if (frame === 10) { let r1 = rolls[startIndex], r2 = rolls[startIndex + 1], r3 = rolls[startIndex + 2]; if (r1 === undefined) return null; if (r1 === 10 || (r2 !== undefined && r1 + r2 === 10)) { if (r3 !== undefined) return r1 + r2 + r3; return null; } else { if (r2 !== undefined) return r1 + r2; return null; } } let r1 = rolls[startIndex], r2 = rolls[startIndex + 1], r3 = rolls[startIndex + 2]; if (r1 === 10) { if (r2 !== undefined && r3 !== undefined) return 10 + r2 + r3; return null; } if (r2 !== undefined) { if (r1 + r2 === 10) { if (r3 !== undefined) return 10 + r3; return null; } return r1 + r2; } return null; }
-        
+        // 任意のrolls配列を使ってフレームスコアを計算する関数
+        function calcFrameScoreWithRolls(frame, startIndex, targetRolls) {
+            if (startIndex >= targetRolls.length) return null;
+            let rollsData = targetRolls; // 名前短縮
+            if (frame === 10) {
+                let r1 = rollsData[startIndex], r2 = rollsData[startIndex + 1], r3 = rollsData[startIndex + 2];
+                if (r1 === undefined) return null;
+                if (r1 === 10 || (r2 !== undefined && r1 + r2 === 10)) { if (r3 !== undefined) return r1 + r2 + r3; return null; } else { if (r2 !== undefined) return r1 + r2; return null; }
+            }
+            let r1 = rollsData[startIndex], r2 = rollsData[startIndex + 1], r3 = rollsData[startIndex + 2];
+            if (r1 === 10) { if (r2 !== undefined && r3 !== undefined) return 10 + r2 + r3; return null; }
+            if (r2 !== undefined) { if (r1 + r2 === 10) { if (r3 !== undefined) return 10 + r3; return null; } return r1 + r2; }
+            return null;
+        }
+
+
+        // --- メイン画面の処理 ---
+        function calculateShootRate(rollsData) {
+            let totalPotted = 0; let totalMisses = 0; let idx = 0; const r = rollsData;
+            for(let f=1; f<=10; f++) {
+                if(idx >= r.length) break;
+                let r1 = r[idx];
+                if(r1 !== undefined) {
+                    totalPotted += r1;
+                    if(r1 === 10) { 
+                        if(f===10) { } idx += (f<10) ? 1 : 1; 
+                    } else {
+                        totalMisses++; 
+                        let r2 = r[idx+1];
+                        if(r2 !== undefined) {
+                            totalPotted += r2;
+                            if(r1 + r2 !== 10) totalMisses++;
+                            idx += 2;
+                        } else { idx += 1; }
+                    }
+                }
+                if(f===10) { while(idx < r.length) { let extra = r[idx]; totalPotted += extra; if(extra < 10) totalMisses++; idx++; } }
+            }
+            const totalAttempts = totalPotted + totalMisses;
+            return totalAttempts ? ((totalPotted / totalAttempts) * 100).toFixed(1) : 0;
+        }
+
+        function updateCurrentGameStats() {
+            if(rolls.length === 0) { currentGameRateEl.textContent = "---%"; } else { const rate = calculateShootRate(rolls); currentGameRateEl.textContent = rate + "%"; }
+        }
+
+        function updateStats() {
+            const history = getHistory();
+            if (history.length === 0) {
+                document.getElementById('stat-potting').textContent = "---%"; document.getElementById('stat-avg').textContent = "---"; document.getElementById('stat-high').textContent = "---";
+                document.getElementById('stat-strike').textContent = "---%"; document.getElementById('stat-spare').textContent = "---%";
+                if(myChart) myChart.destroy(); return;
+            }
+            const allTimeHigh = Math.max(...history.map(g => g.score));
+            const recent20 = history.slice(0, 20);
+            const totalScore = recent20.reduce((a, b) => a + b.score, 0);
+            const avg20 = (totalScore / recent20.length).toFixed(0);
+            let totalRate = 0; let validGames = 0;
+            recent20.forEach(g => { if(g.rolls && g.rolls.length > 0) { totalRate += parseFloat(calculateShootRate(g.rolls)); validGames++; } });
+            const avgPotting = validGames ? (totalRate / validGames).toFixed(1) : 0;
+
+            let totalFrames = 0; let totalStrikes = 0; let totalSpares = 0;
+            recent20.forEach(game => {
+                if(!game.rolls) return; let r = game.rolls; let idx = 0;
+                for(let f=1; f<=10; f++) {
+                    if(idx >= r.length) break; totalFrames++;
+                    let r1 = r[idx]; let r2 = r[idx+1];
+                    if(r1 === 10) { totalStrikes++; if(f===10) idx+=3; else idx++; } else if (r1 + r2 === 10) { totalSpares++; idx += 2; } else { idx += 2; }
+                }
+            });
+            const sRate = totalFrames ? ((totalStrikes / totalFrames) * 100).toFixed(1) : 0;
+            const spRate = totalFrames ? ((totalSpares / totalFrames) * 100).toFixed(1) : 0;
+            
+            document.getElementById('stat-potting').textContent = avgPotting + "%"; document.getElementById('stat-avg').textContent = avg20; document.getElementById('stat-high').textContent = allTimeHigh;
+            document.getElementById('stat-strike').textContent = sRate + "%"; document.getElementById('stat-spare').textContent = spRate + "%";
+            renderChart(recent20);
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            const chartData = [...data].reverse();
+            const labels = chartData.map((d, i) => i + 1);
+            const scores = chartData.map(d => d.score);
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line', data: { labels: labels, datasets: [{ label: 'Score', data: scores, borderColor: '#00e676', backgroundColor: 'rgba(0, 230, 118, 0.1)', borderWidth: 2, tension: 0.3, fill: true, pointBackgroundColor: '#fff', pointRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 300, grid: { color: '#333' }, ticks: { color: '#888' } }, x: { display: false } } }
+            });
+        }
+
+        // --- カレンダー ---
+        function changeMonth(diff) { currentCalDate.setMonth(currentCalDate.getMonth() + diff); renderCalendar(currentCalDate); }
+        let currentCalDate = new Date();
+        function renderCalendar(date) {
+            const year = date.getFullYear(); const month = date.getMonth();
+            document.getElementById('cal-month-label').textContent = `${year} / ${month + 1}`;
+            const firstDay = new Date(year, month, 1).getDay(); const lastDate = new Date(year, month + 1, 0).getDate();
+            const calBody = document.getElementById('calendar-body'); calBody.innerHTML = '';
+            
+            const history = getHistory();
+            const monthlyBestGames = {}; // { 1: {score:100, rolls:[...]}, 2: ... }
+            
+            history.forEach(h => {
+                const d = new Date(h.timestamp);
+                if(d.getFullYear() === year && d.getMonth() === month) {
+                    const dayKey = d.getDate();
+                    // その日の最高スコアの「ゲームデータ全体」を保持する
+                    if(!monthlyBestGames[dayKey] || h.score > monthlyBestGames[dayKey].score) {
+                        monthlyBestGames[dayKey] = h;
+                    }
+                }
+            });
+
+            for(let i=0; i<firstDay; i++) { calBody.appendChild(document.createElement('div')); }
+            const today = new Date();
+            for(let d=1; d<=lastDate; d++) {
+                const dayCell = document.createElement('div'); dayCell.className = 'day'; dayCell.textContent = d;
+                if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) dayCell.classList.add('today');
+                if(monthlyBestGames[d]) {
+                    dayCell.classList.add('has-game');
+                    // ★カレンダーのスコア部分をクリックで詳細オープン
+                    // ※onclickでオブジェクトを渡すのが難しいため、即時関数的に処理を設定
+                    const scoreSpan = document.createElement('div');
+                    scoreSpan.className = 'day-score';
+                    scoreSpan.textContent = monthlyBestGames[d].score;
+                    scoreSpan.onclick = function() { openGameDetail(monthlyBestGames[d]); };
+                    dayCell.appendChild(scoreSpan);
+                }
+                calBody.appendChild(dayCell);
+            }
+        }
+
+        // --- メインスコアボード (操作用) ---
+        function renderScoreboard() {
+            // メイン画面のスコアボード描画は、汎用関数に現在のrollsとメインElementを渡して実行
+            renderScoreboardToTarget(rolls, scoreboardEl);
+            // トータルスコア計算（表示更新のため）
+            let total = 0; let idx = 0;
+            for(let f=1; f<=10; f++) { let s = calcFrameScoreWithRolls(f, idx, rolls); if(s!==null) total+=s; if(f<10) { if(rolls[idx]===10) idx++; else idx+=2; } else { idx+=3; } }
+            // 簡易計算だとズレるので、renderScoreboardToTarget内で計算された累積スコアを取得するのが理想だが、
+            // ここでは簡易的に再計算済みのDOMから値を取るか、既存ロジックを維持。
+            // ※既存ロジック維持のため、以下手動計算
+            let rollIndex = 0; let cumulativeScore = 0;
+            for(let f=1;f<=10;f++) {
+                let fs = calcFrameScoreWithRolls(f, rollIndex, rolls);
+                if(fs!==null) cumulativeScore+=fs;
+                if(f<10) { if(rolls[rollIndex]===10) rollIndex++; else rollIndex+=2; }
+            }
+            totalScoreEl.textContent = cumulativeScore;
+            return cumulativeScore;
+        }
+
         function addScore(pins) { if (isGameFinished) return; rolls.push(pins); updateGameStatus(); const currentScore = renderScoreboard(); updateButtonState(); updateCurrentGameStats(); if (currentFrame > 10) { isGameFinished = true; saveHistory(currentScore); renderScoreboard(); updateButtonState(); setTimeout(() => alert(`ゲーム終了！スコア: ${currentScore}`), 100); } }
-        
         function updateGameStatus() { let f = 1; let idx = 0; while (f <= 10 && idx < rolls.length) { let r1 = rolls[idx]; if (f < 10) { if (r1 === 10) { idx++; f++; } else { if (rolls[idx + 1] !== undefined) { idx += 2; f++; } else { break; } } } else { let r2 = rolls[idx + 1], r3 = rolls[idx + 2]; if (r2 === undefined) break; if (r1 === 10 || r1 + r2 === 10) { if (r3 !== undefined) { f++; idx += 3; } else { break; } } else { f++; idx += 2; } } } currentFrame = f; }
-        
         function updateButtonState() { if (currentFrame > 10) { for (let i = 0; i <= 10; i++) { buttons[i].disabled = true; } return; } let idx = 0; for(let f=1; f<currentFrame; f++) { if(rolls[idx] === 10) idx++; else idx += 2; } let frameRolls = []; for(let i=idx; i<rolls.length; i++) { frameRolls.push(rolls[i]); } let maxPins = 10; if (currentFrame < 10) { if (frameRolls.length === 1) maxPins = 10 - frameRolls[0]; } else { if (frameRolls.length === 1) { if (frameRolls[0] < 10) maxPins = 10 - frameRolls[0]; } else if (frameRolls.length === 2) { if (frameRolls[0] === 10 && frameRolls[1] < 10) maxPins = 10 - frameRolls[1]; else if (frameRolls[0] + frameRolls[1] === 10 || frameRolls[0] === 10 && frameRolls[1] === 10) maxPins = 10; } } for (let score = 0; score <= 10; score++) { const btn = buttons[score]; if (score > maxPins) btn.disabled = true; else btn.disabled = false; } }
-        
-        function undo() { if (isGameFinished) { isGameFinished = false; /*履歴操作なし*/ } if (rolls.length > 0) { rolls.pop(); updateGameStatus(); renderScoreboard(); updateButtonState(); updateCurrentGameStats(); } }
-        
+        function undo() { if (isGameFinished) { isGameFinished = false; } if (rolls.length > 0) { rolls.pop(); updateGameStatus(); renderScoreboard(); updateButtonState(); updateCurrentGameStats(); } }
         function resetGame() { if(confirm('現在のゲームをリセットしますか？')) { rolls = []; currentFrame = 1; isGameFinished = false; renderScoreboard(); updateButtonState(); updateCurrentGameStats(); } }
 
         init();
