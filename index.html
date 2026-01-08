@@ -52,7 +52,6 @@
         .cal-btn { height: 30px; font-size: 1rem; width: 40px; }
         .current-month { font-size: 1.2rem; font-weight: bold; }
         
-        /* 縦並び防止のための強力なスタイル */
         .calendar-grid { 
             display: grid !important; 
             grid-template-columns: repeat(7, 1fr) !important; 
@@ -258,7 +257,10 @@
     <div id="game-detail-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div><div id="modal-date" style="font-size:0.8rem; color:#aaa;"></div><div class="modal-title">Game Details</div></div>
+                <div>
+                    <div id="modal-date" style="font-size:0.8rem; color:#aaa;"></div>
+                    <div class="modal-title" id="modal-title-text">Game Details</div>
+                </div>
                 <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div style="text-align:center; margin-bottom:20px;">
@@ -328,24 +330,37 @@
             });
         }
 
-        // ★★★ 修正済み：どんな形式の日付がきても綺麗に表示する ★★★
-        function openGameDetail(gameData) {
+        // --- ★日付整形用ヘルパー関数 ---
+        function formatDateString(val) {
+            if(!val) return "";
+            const d = new Date(val);
+            if(isNaN(d.getTime())) return val; // 変換不能ならそのまま返す
+            return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+        }
+
+        // --- ★詳細モーダル表示 (名前表示に対応) ---
+        function openGameDetail(gameData, playerName = null) {
             if(!gameData || !gameData.rolls) {
                 alert("詳細データがありません。");
                 return;
             }
             
+            // タイトルの変更（名前があれば名前、なければGame Details）
+            const titleEl = document.getElementById('modal-title-text');
+            if(playerName) {
+                titleEl.textContent = playerName;
+            } else {
+                titleEl.textContent = "Game Details";
+            }
+            
+            // 日付の処理
             const dateEl = document.getElementById('modal-date');
             const ts = gameData.timestamp;
-
-            // 数値(ローカル)でも、文字(ランキングのISO形式など)でも、まずは日付として変換を試みる
             const d = new Date(ts);
             
             if (!isNaN(d.getTime())) {
-                // うまく日付に変換できた場合 → 綺麗に整形して表示
                 dateEl.textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
             } else {
-                // 万が一読めなかった場合 → そのまま文字として表示
                 dateEl.textContent = ts;
             }
 
@@ -435,12 +450,10 @@
                     const score = row[3];
                     const rate = row[4];
                     const avg = row[5];
-                    const rollsJson = row[6]; // 詳細データ
+                    const rollsJson = row[6]; 
 
-                    let dateStr = "";
-                    if(dateRaw) {
-                        dateStr = dateRaw; // GAS側でgetDisplayValues()しているのでそのまま使う
-                    }
+                    // ★一覧表示用に日付を綺麗にする
+                    const dateStr = formatDateString(dateRaw);
 
                     let rankClass = 'rank-other';
                     if(rank === 1) rankClass = 'rank-1';
@@ -467,11 +480,12 @@
                         if(rollsJson) {
                             try {
                                 const rolls = JSON.parse(rollsJson);
+                                // ★名前も渡す
                                 openGameDetail({
                                     score: score,
                                     rolls: rolls,
                                     timestamp: dateRaw
-                                });
+                                }, name); 
                             } catch(e) {
                                 alert("詳細データ形式エラー");
                             }
