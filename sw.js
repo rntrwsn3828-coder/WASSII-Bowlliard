@@ -1,16 +1,28 @@
-// Service Worker Minimal Configuration
-// インストールはするが、キャッシュは制御せず全てネットワークを通す
-// これにより起動エラーを防ぐ
+const CACHE_NAME = 'bowlliard-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json'
+];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', e => {
   self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))
+  );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))
+    )
+  );
+  self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  // キャッシュ戦略を行わず、そのままネットワークへリクエストを流す
-  event.respondWith(fetch(event.request));
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    fetch(e.request).catch(() => caches.match(e.request))
+  );
 });
