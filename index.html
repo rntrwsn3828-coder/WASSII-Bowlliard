@@ -119,12 +119,25 @@
     }
 
     .weekday { color: var(--text-sub); font-size: 0.8rem; padding-bottom: 5px; display:flex; justify-content:center; }
-    .day { background: var(--card-bg); height: 50px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.9rem; position: relative; width: auto !important; }
+    .day {
+      background: var(--card-bg);
+      height: 60px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.9rem;
+      position: relative;
+      width: auto !important;
+      cursor: default;
+    }
     .day.today { border: 1px solid var(--accent-color); }
-    .day.has-game { background: #1b3323; }
-    .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; cursor: pointer; text-decoration: underline; }
+    .day.has-game { background: #1b3323; cursor: pointer; }
+    .day-score { font-size: 0.75rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; text-decoration: underline; }
+    .day-count { font-size: 0.65rem; color: #a0cfae; margin-top: 2px; opacity: 0.9; }
 
-    .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+    .history-list { list-style: none; padding: 0; margin: 0; max-height: 320px; overflow-y: auto; }
     .history-item { background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; }
     .history-item:hover { background: rgba(255,255,255,0.1); }
     .history-item:first-child { border-left: 3px solid var(--accent-color); background: rgba(0, 230, 118, 0.05); }
@@ -279,6 +292,7 @@
       button { height: 80px; font-size: 1.8rem; }
       .rank-btn-game { height: 80px; font-size: 1.5rem; }
       .rank-filter-btn { padding: 8px 16px; font-size: 1rem; height: 40px; }
+      .day { height: 70px; }
     }
   </style>
 </head>
@@ -302,12 +316,12 @@
     <div class="main-content">
       <div class="info-panel">
         <div class="stats-bar">
-          <span class="avg-label">シュート率 (今回)</span>
+          <span class="avg-label">シュート率（今回）</span>
           <span class="avg-value" id="current-game-rate">---%</span>
         </div>
 
         <div id="history-section">
-          <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History (タップで詳細)</div>
+          <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History（タップで詳細）</div>
           <ul class="history-list" id="history-list"></ul>
         </div>
       </div>
@@ -345,7 +359,7 @@
     <div class="calendar-grid" id="calendar-body"></div>
 
     <div style="margin-top:20px; font-size:0.8rem; color:#888; text-align:center;">
-      *日付の下のスコアをタップすると<br>その日のベストゲームの詳細が見れます
+      *日付セル（緑）をタップすると、その日の記録一覧を開きます
     </div>
   </div>
 
@@ -354,8 +368,16 @@
     <header><div class="header-title"><h1>Analysis</h1></div></header>
 
     <div class="stats-main-card">
-      <span class="stat-label">シュート率 (過去20ゲーム)</span>
+      <span class="stat-label">シュート率（直近20ゲーム）</span>
       <span class="stats-main-value" id="stat-potting">---%</span>
+    </div>
+
+    <!-- ★ 表記を指定どおりに（分かりやすい5指標） -->
+    <div class="stats-grid" style="margin-bottom:10px;">
+      <div class="stat-card"><span class="stat-label">ストライク率</span><span class="stat-value" id="stat-strike">---%</span></div>
+      <div class="stat-card"><span class="stat-label">スペア率</span><span class="stat-value" id="stat-spare">---%</span></div>
+      <div class="stat-card"><span class="stat-label">オープン率</span><span class="stat-value" id="stat-open">---%</span></div>
+      <div class="stat-card"><span class="stat-label">平均入れ球</span><span class="stat-value" id="stat-balls">---</span></div>
     </div>
 
     <div class="stats-grid">
@@ -370,6 +392,10 @@
         全データを消去
       </button>
     </div>
+
+    <div style="margin-top:10px; text-align:center; font-size:0.75rem; color:#777;">
+      ※「平均入れ球」は 1投あたりの平均入球（最大10）です
+    </div>
   </div>
 
   <!-- ===== Ranking View ===== -->
@@ -381,7 +407,7 @@
       </button>
     </header>
 
-    <!-- ★ 本日/7日/月間/年間/殿堂 -->
+    <!-- 本日/7日/月間/年間/殿堂 -->
     <div class="rank-filter-bar">
       <button class="rank-filter-btn active" onclick="switchRankType('today', this)">本日</button>
       <button class="rank-filter-btn" onclick="switchRankType('7d', this)">過去7日</button>
@@ -416,7 +442,7 @@
     <button class="tab-btn" onclick="switchTab('stats')"><span class="tab-icon">📈</span>Stats</button>
   </div>
 
-  <!-- ===== Modal ===== -->
+  <!-- ===== Game Detail Modal ===== -->
   <div id="game-detail-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -430,38 +456,33 @@
       <div style="text-align:center; margin-bottom:12px;">
         <span class="modal-score-display" id="modal-score">0</span>
         <div style="font-size:0.9rem; color:#ccc; margin-top:5px;">
-          シュート率: <span id="modal-rate">---%</span>
-        </div>
-
-        <!-- ★ 修正：rolls無しでもモーダルを開き、理由を表示 -->
-        <div id="modal-no-rolls" style="display:none; margin-top:8px; font-size:0.8rem; color: var(--warn);">
-          この記録は旧データのため詳細（rolls）が保存されていません。
+          シュート率: <span id="modal-rate">0%</span>
         </div>
       </div>
 
-      <!-- ★ プレイヤー能力（直近20 / 選択タブ期間内） -->
+      <!-- プレイヤー能力（GAS直近20 / 選択タブ期間内） -->
       <div id="player-stats-box" style="margin:10px 0 14px; padding:10px; border:1px solid #333; border-radius:10px; background:rgba(255,255,255,0.03); display:none;">
         <div id="player-stats-title" style="font-size:0.85rem; color:#bbb; margin-bottom:8px; text-align:left;"></div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
           <div style="text-align:left;">
-            <div style="font-size:0.7rem; color:#888;">Potting（成功率）</div>
+            <div style="font-size:0.7rem; color:#888;">シュート率</div>
             <div id="ps-potting" style="font-size:1.2rem; font-weight:800; color:var(--accent-color);">---</div>
           </div>
           <div style="text-align:left;">
-            <div style="font-size:0.7rem; color:#888;">1ミス平均入球</div>
+            <div style="font-size:0.7rem; color:#888;">平均入れ球</div>
             <div id="ps-bpm" style="font-size:1.2rem; font-weight:800;">---</div>
           </div>
           <div style="text-align:left;">
-            <div style="font-size:0.7rem; color:#888;">X（取り切り1投）</div>
+            <div style="font-size:0.7rem; color:#888;">ストライク率</div>
             <div id="ps-x" style="font-size:1.1rem; font-weight:700;">---</div>
           </div>
           <div style="text-align:left;">
-            <div style="font-size:0.7rem; color:#888;">/（詰め切り2投）</div>
+            <div style="font-size:0.7rem; color:#888;">スペア率</div>
             <div id="ps-spare" style="font-size:1.1rem; font-weight:700;">---</div>
           </div>
           <div style="text-align:left;">
-            <div style="font-size:0.7rem; color:#888;">Open（未達）</div>
+            <div style="font-size:0.7rem; color:#888;">オープン率</div>
             <div id="ps-open" style="font-size:1.1rem; font-weight:700;">---</div>
           </div>
           <div style="text-align:left;">
@@ -475,931 +496,27 @@
     </div>
   </div>
 
-  <script>
-    /**********************
-     * 設定
-     **********************/
-    const STORAGE_KEY = 'bowlliard_history_v2';
-
-    // ★あなたのGAS /exec URLに変更してください
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyfCTtZRbDI-n5AZSA-wpB6jowbMf_vpNjij-VopnFYryDkBz-kV5dCYzeeseeNoVcY/exec";
-
-    // トークン保護をGAS側で有効にした場合のみ使う
-    const REQUIRE_TOKEN = false;
-    const API_TOKEN = "";
-
-    /**********************
-     * 状態
-     **********************/
-    let rolls = [];
-    let currentFrame = 1;
-    let isGameFinished = false;
-
-    let currentRankType = 'today'; // ★初期：本日
-
-    const views = {
-      game: document.getElementById('view-game'),
-      calendar: document.getElementById('view-calendar'),
-      stats: document.getElementById('view-stats'),
-      ranking: document.getElementById('view-ranking')
-    };
-    const tabs = document.querySelectorAll('.tab-btn');
-
-    const scoreboardEl = document.getElementById('scoreboard');
-    const totalScoreEl = document.getElementById('total-score');
-    const buttons = document.querySelectorAll('#keypad button');
-
-    const currentGameRateEl = document.getElementById('current-game-rate');
-    const historyListEl = document.getElementById('history-list');
-
-    const modalEl = document.getElementById('game-detail-modal');
-    const modalScoreboardEl = document.getElementById('modal-scoreboard');
-
-    let myChart = null;
-    let currentCalDate = new Date();
-
-    /**********************
-     * 初期化
-     **********************/
-    function init() {
-      renderScoreboard();
-      updateButtonState();
-      updateStats();
-      renderCalendar(new Date());
-      renderHistoryList();
-      updateCurrentGameStats();
-    }
-
-    function switchTab(tabName) {
-      Object.values(views).forEach(el => el.classList.remove('active'));
-      views[tabName].classList.add('active');
-
-      tabs.forEach((btn, idx) => {
-        const names = ['game', 'calendar', 'ranking', 'stats'];
-        if (names[idx] === tabName) btn.classList.add('active');
-        else btn.classList.remove('active');
-      });
-
-      if (tabName === 'stats') updateStats();
-      if (tabName === 'calendar') renderCalendar(new Date());
-      if (tabName === 'ranking') fetchRanking(currentRankType);
-    }
-
-    /**********************
-     * Local History
-     **********************/
-    function getHistory() {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
-    }
-
-    function saveHistory(score) {
-      const history = getHistory();
-      const now = new Date();
-      const gameData = { score: score, rolls: [...rolls], timestamp: now.getTime() };
-      history.unshift(gameData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-      updateStats();
-      renderHistoryList();
-    }
-
-    function clearHistory() {
-      if (confirm('全データを削除しますか？')) {
-        localStorage.removeItem(STORAGE_KEY);
-        updateStats();
-        renderCalendar(new Date());
-        renderHistoryList();
-      }
-    }
-
-    function renderHistoryList() {
-      const history = getHistory();
-      historyListEl.innerHTML = '';
-      if (history.length === 0) return;
-
-      const recent5 = history.slice(0, 5);
-      recent5.forEach(h => {
-        const d = new Date(h.timestamp);
-        const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        const li = document.createElement('li');
-        li.className = 'history-item';
-        li.onclick = function () { openGameDetail(h); };
-        li.innerHTML = `<span class="h-date">${dateStr}</span><span class="h-score">${h.score}</span>`;
-        historyListEl.appendChild(li);
-      });
-    }
-
-    /**********************
-     * 日付整形
-     **********************/
-    function formatDateString(val) {
-      if (val === null || val === undefined || val === '') return '';
-      const d = new Date(val);
-      if (isNaN(d.getTime())) return String(val);
-      return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
-    }
-
-    function formatDateTimeString(val) {
-      if (val === null || val === undefined || val === '') return '';
-      const d = new Date(val);
-      if (isNaN(d.getTime())) return String(val);
-      return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    }
-
-    /**********************
-     * rollsJson 取得（ズレ・旧データを吸収）
-     **********************/
-    function normalizeRollsJson(v) {
-      if (v === null || v === undefined) return '';
-      const s = String(v).trim();
-      if (!s || s === 'null' || s === 'undefined') return '';
-      return s;
-    }
-
-    function getRollsJsonFromRankingRow(row) {
-      // 新GAS: row[12] が bestRollsJson
-      const cand = [
-        row[12],
-        row[row.length - 1],
-        row[6],
-        row[5]
-      ];
-      for (const c of cand) {
-        const s = normalizeRollsJson(c);
-        if (s) return s;
-      }
-      return '';
-    }
-
-    /**********************
-     * モーダル
-     **********************/
-    function openGameDetail(gameData, playerName = null) {
-      // ★修正：rollsが無くてもモーダルを開く（ランキング旧データ対策）
-      const titleEl = document.getElementById('modal-title-text');
-      titleEl.textContent = playerName ? playerName : "Game Details";
-
-      document.getElementById('modal-date').textContent = formatDateTimeString(gameData?.timestamp);
-      document.getElementById('modal-score').textContent = (gameData?.score ?? 0);
-
-      const noRollsEl = document.getElementById('modal-no-rolls');
-
-      const hasRolls = Array.isArray(gameData?.rolls) && gameData.rolls.length > 0;
-
-      if (hasRolls) {
-        document.getElementById('modal-rate').textContent = calculateShootRate(gameData.rolls) + "%";
-        noRollsEl.style.display = 'none';
-        renderScoreboardToTarget(gameData.rolls, modalScoreboardEl);
-      } else {
-        document.getElementById('modal-rate').textContent = "---%";
-        noRollsEl.style.display = 'block';
-        renderScoreboardToTarget([], modalScoreboardEl);
-      }
-
-      modalEl.classList.add('show');
-
-      // ★ランキングから開いた場合：選択タブ期間内の直近20能力を表示
-      if (playerName) fetchPlayerStats(playerName);
-      else hidePlayerStats();
-    }
-
-    function closeModal() { modalEl.classList.remove('show'); }
-    modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
-
-    /**********************
-     * プレイヤー能力（直近20 / 選択タブ期間内）
-     **********************/
-    function hidePlayerStats() {
-      const box = document.getElementById('player-stats-box');
-      if (box) box.style.display = 'none';
-    }
-
-    function setPlayerStatsLoading(playerName) {
-      const box = document.getElementById('player-stats-box');
-      if (!box) return;
-      box.style.display = 'block';
-      document.getElementById('player-stats-title').textContent = `${playerName}：直近20ゲーム（集計中...）`;
-      document.getElementById('ps-potting').textContent = '---';
-      document.getElementById('ps-bpm').textContent = '---';
-      document.getElementById('ps-x').textContent = '---';
-      document.getElementById('ps-spare').textContent = '---';
-      document.getElementById('ps-open').textContent = '---';
-      document.getElementById('ps-score').textContent = '---';
-    }
-
-    function renderPlayerStats(playerName, s) {
-      const box = document.getElementById('player-stats-box');
-      if (!box) return;
-
-      if (!s || s.ok !== true || !s.games) {
-        box.style.display = 'block';
-        document.getElementById('player-stats-title').textContent = `${playerName}：直近20ゲーム（データ不足）`;
-        return;
-      }
-
-      box.style.display = 'block';
-
-      const from = new Date(s.fromTs);
-      const to = new Date(s.toTs);
-      const range = `${from.getFullYear()}/${from.getMonth()+1}/${from.getDate()}〜${to.getFullYear()}/${to.getMonth()+1}/${to.getDate()}`;
-
-      document.getElementById('player-stats-title').textContent =
-        `${playerName}：直近${s.games}${s.games < s.recent ? `/${s.recent}` : ''}ゲーム（${range}）`;
-
-      document.getElementById('ps-potting').textContent = `${s.pottingPct}%`;
-      document.getElementById('ps-bpm').textContent = (s.ballsPerMiss == null) ? '∞' : `${s.ballsPerMiss}`;
-      document.getElementById('ps-x').textContent = `${s.strikePct}%`;
-      document.getElementById('ps-spare').textContent = `${s.sparePct}%`;
-      document.getElementById('ps-open').textContent = `${s.openPct}%`;
-      document.getElementById('ps-score').textContent = `${s.avgScore} / ${s.highScore ?? '---'}`;
-    }
-
-    function getRankBasis(type) {
-      // 月間/年間はカレンダー基準
-      if (type === 'month' || type === 'year') return 'calendar';
-      return 'rolling';
-    }
-
-    function fetchPlayerStats(playerName) {
-      setPlayerStatsLoading(playerName);
-
-      const type = currentRankType;
-      const basis = getRankBasis(type);
-
-      const params = new URLSearchParams();
-      params.set('player', playerName);
-      params.set('recent', '20');
-      params.set('type', type);
-      params.set('basis', basis);
-      params.set('_', String(Date.now()));
-      if (REQUIRE_TOKEN) params.set('token', API_TOKEN);
-
-      const url = `${GAS_URL}?${params.toString()}`;
-
-      fetch(url, { cache: "no-store" })
-        .then(r => r.json())
-        .then(data => renderPlayerStats(playerName, data))
-        .catch(() => renderPlayerStats(playerName, { ok:false }));
-    }
-
-    /**********************
-     * GASへ登録（POST）
-     **********************/
-    function sendToRanking(btnElement) {
-      const history = getHistory();
-      if (history.length === 0) { alert("送信するデータがありません。"); return; }
-
-      const lastGame = history[0];
-      const rate = calculateShootRate(lastGame.rolls);
-      const currentAvg = document.getElementById('stat-avg').textContent;
-
-      const playerName = prompt("ランキングに登録する名前を入力してください:", localStorage.getItem('last_player_name') || "");
-      if (!playerName) return;
-
-      localStorage.setItem('last_player_name', playerName);
-
-      if (!confirm(`${playerName} さん\nスコア: ${lastGame.score}\nシュート率: ${rate}%\nAvg: ${currentAvg}\n\nこのスコアをRankingsに登録しますか？`)) return;
-
-      const originalText = btnElement.innerText;
-      btnElement.innerText = "送信中...";
-      btnElement.disabled = true;
-
-      const payload = {
-        name: playerName,
-        score: lastGame.score,
-        rate: rate,
-        avg: currentAvg,
-        rolls: lastGame.rolls
-      };
-
-      fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }).then(() => {
-        alert("登録完了！Rankingsタブで確認できます。");
-        btnElement.innerText = originalText;
-        btnElement.disabled = false;
-      }).catch(err => {
-        alert("送信エラー: " + err);
-        btnElement.innerText = originalText;
-        btnElement.disabled = false;
-      });
-    }
-
-    /**********************
-     * Ranking（一覧：ベスト＋能力(直近20)表示）
-     **********************/
-    function switchRankType(type, btn) {
-      currentRankType = type;
-      document.querySelectorAll('.rank-filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      fetchRanking(type);
-    }
-
-    function fetchRanking(type = 'today') {
-      const loadingEl = document.getElementById('ranking-loading');
-      const listEl = document.getElementById('ranking-list');
-      const errorEl = document.getElementById('ranking-error');
-
-      listEl.innerHTML = '';
-      loadingEl.style.display = 'block';
-      errorEl.style.display = 'none';
-
-      const basis = getRankBasis(type);
-
-      const params = new URLSearchParams();
-      params.set('type', type);
-      params.set('basis', basis);
-      params.set('recent', '20'); // ★能力は直近20
-      params.set('limit', '50');
-      params.set('_', String(Date.now()));
-      if (REQUIRE_TOKEN) params.set('token', API_TOKEN);
-
-      const fetchUrl = `${GAS_URL}?${params.toString()}`;
-
-      fetch(fetchUrl, { cache: "no-store" })
-        .then(res => res.json())
-        .then(data => {
-          loadingEl.style.display = 'none';
-
-          if (!data || data.length === 0) {
-            listEl.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#888;">データがありません</td></tr>';
-            return;
-          }
-
-          data.forEach((row) => {
-            // GAS返却（ランキング）:
-            // [0]rank [1]bestTs [2]name [3]bestScore [4]potting [5]bpm [6]X [7]/ [8]open [9]avg [10]high [11]games [12]bestRollsJson
-            const rank = row[0];
-            const bestTs = row[1];
-            const name = row[2];
-            const bestScore = row[3];
-
-            const potting = row[4];
-            const bpm = row[5];
-            const xPct = row[6];
-            const sparePct = row[7];
-            const openPct = row[8];
-            const avgScore = row[9];
-            const highScore = row[10];
-            const gamesCount = row[11];
-
-            // ★修正：ロール列ズレ/旧データを吸収
-            const rollsJson = getRollsJsonFromRankingRow(row);
-            const hasDetail = !!rollsJson;
-
-            const dateStr = formatDateString(bestTs);
-
-            let rankClass = 'rank-other';
-            if (rank === 1) rankClass = 'rank-1';
-            else if (rank === 2) rankClass = 'rank-2';
-            else if (rank === 3) rankClass = 'rank-3';
-
-            const bpmText = (bpm === null || bpm === undefined) ? '∞' : bpm;
-
-            const tr = document.createElement('tr');
-            tr.className = rankClass;
-
-            tr.innerHTML = `
-              <td style="text-align:center;">
-                <div class="rank-badge">${rank}</div>
-              </td>
-              <td class="rank-player-cell">
-                <span class="rank-name">${name}</span>
-                <span class="rank-date">Best: ${dateStr} / 直近${gamesCount}G ${hasDetail ? '' : ' / ※詳細なし'}</span>
-              </td>
-              <td class="rank-stats-cell">
-                <div class="rank-score">${bestScore}</div>
-                <span class="rank-sub-stats">
-                  Potting: ${potting}% | 1miss: ${bpmText} | X: ${xPct}% | /: ${sparePct}% | Open: ${openPct}%<br>
-                  Avg: ${avgScore} | High(20): ${highScore ?? '---'}
-                </span>
-              </td>
-            `;
-
-            tr.onclick = function () {
-              if (hasDetail) {
-                try {
-                  const r = JSON.parse(rollsJson);
-                  openGameDetail({ score: bestScore, rolls: r, timestamp: bestTs }, name);
-                } catch (e) {
-                  // parse失敗でも「データ無し」ではなく形式エラーとして明示
-                  openGameDetail({ score: bestScore, rolls: null, timestamp: bestTs }, name);
-                  alert("詳細データ形式エラー（rollsの形式が不正です）");
-                }
-              } else {
-                // ★修正：詳細が無くてもモーダルは開いて「能力値」は出す
-                openGameDetail({ score: bestScore, rolls: null, timestamp: bestTs }, name);
-              }
-            };
-
-            listEl.appendChild(tr);
-          });
-        })
-        .catch(err => {
-          loadingEl.style.display = 'none';
-          errorEl.style.display = 'block';
-          errorEl.textContent = '取得失敗: ' + err;
-        });
-    }
-
-    /**********************
-     * スコアボード描画（共通）
-     **********************/
-    function renderScoreboardToTarget(targetRolls, targetEl) {
-      const safeRolls = Array.isArray(targetRolls) ? targetRolls : [];
-      targetEl.innerHTML = '';
-
-      let rollIndex = 0;
-      let cumulativeScore = 0;
-
-      for (let f = 1; f <= 10; f++) {
-        const frameDiv = document.createElement('div');
-        frameDiv.className = 'frame';
-        if (f === currentFrame && !isGameFinished && targetEl === scoreboardEl) frameDiv.classList.add('active');
-
-        const header = document.createElement('div');
-        header.className = 'frame-header';
-        header.textContent = f;
-        frameDiv.appendChild(header);
-
-        const rollsDiv = document.createElement('div');
-        rollsDiv.className = 'rolls';
-
-        let frameScore = calcFrameScoreWithRolls(f, rollIndex, safeRolls);
-
-        let r1 = safeRolls[rollIndex], r2 = safeRolls[rollIndex + 1];
-
-        if (f < 10) {
-          const box1 = document.createElement('div');
-          box1.className = 'roll-box';
-          if (r1 !== undefined) box1.textContent = (r1 === 10 ? 'X' : (r1 === 0 ? '-' : r1));
-          rollsDiv.appendChild(box1);
-
-          const box2 = document.createElement('div');
-          box2.className = 'roll-box';
-
-          if (r1 === 10) {
-            rollIndex++;
-            const empty = document.createElement('div');
-            empty.className = 'roll-box';
-            rollsDiv.appendChild(empty);
-          } else {
-            if (r1 !== undefined) {
-              if (r2 !== undefined) {
-                box2.textContent = (r1 + r2 === 10) ? '/' : (r2 === 0 ? '-' : r2);
-                rollIndex += 2;
-              } else {
-                rollIndex = 9999;
-              }
-              rollsDiv.appendChild(box2);
-            } else {
-              rollIndex = 9999;
-            }
-          }
-        } else {
-          // 10F
-          let localIdx = rollIndex;
-          let f10_r1 = safeRolls[localIdx];
-          let f10_r2 = safeRolls[localIdx + 1];
-          let f10_r3 = safeRolls[localIdx + 2];
-
-          const b1 = document.createElement('div');
-          b1.className = 'roll-box';
-          if (f10_r1 !== undefined) b1.textContent = (f10_r1 === 10 ? 'X' : (f10_r1 === 0 ? '-' : f10_r1));
-          rollsDiv.appendChild(b1);
-
-          const b2 = document.createElement('div');
-          b2.className = 'roll-box';
-          if (f10_r2 !== undefined) {
-            if (f10_r1 === 10) b2.textContent = (f10_r2 === 10 ? 'X' : (f10_r2 === 0 ? '-' : f10_r2));
-            else b2.textContent = (f10_r1 + f10_r2 === 10 ? '/' : (f10_r2 === 0 ? '-' : f10_r2));
-          }
-          rollsDiv.appendChild(b2);
-
-          const b3 = document.createElement('div');
-          b3.className = 'roll-box';
-          if (f10_r3 !== undefined) {
-            if (f10_r3 === 10) b3.textContent = 'X';
-            else if (f10_r1 === 10 && f10_r2 !== 10 && f10_r2 + f10_r3 === 10) b3.textContent = '/';
-            else b3.textContent = (f10_r3 === 0 ? '-' : f10_r3);
-          }
-          rollsDiv.appendChild(b3);
-
-          if (f10_r1 !== undefined) {
-            if (f10_r1 === 10 || f10_r1 + (f10_r2 || 0) === 10) {
-              if (f10_r3 !== undefined) rollIndex += 3;
-              else rollIndex = 9999;
-            } else {
-              if (f10_r2 !== undefined) rollIndex += 2;
-              else rollIndex = 9999;
-            }
-          } else {
-            rollIndex = 9999;
-          }
-        }
-
-        frameDiv.appendChild(rollsDiv);
-
-        const scoreDiv = document.createElement('div');
-        scoreDiv.className = 'frame-score';
-        if (frameScore !== null) {
-          cumulativeScore += frameScore;
-          scoreDiv.textContent = cumulativeScore;
-        }
-        frameDiv.appendChild(scoreDiv);
-
-        targetEl.appendChild(frameDiv);
-      }
-    }
-
-    function calcFrameScoreWithRolls(frame, startIndex, targetRolls) {
-      if (startIndex >= targetRolls.length) return null;
-
-      const rollsData = targetRolls;
-
-      if (frame === 10) {
-        let r1 = rollsData[startIndex];
-        let r2 = rollsData[startIndex + 1];
-        let r3 = rollsData[startIndex + 2];
-        if (r1 === undefined) return null;
-
-        if (r1 === 10 || (r2 !== undefined && r1 + r2 === 10)) {
-          if (r3 !== undefined) return r1 + r2 + r3;
-          return null;
-        } else {
-          if (r2 !== undefined) return r1 + r2;
-          return null;
-        }
-      }
-
-      let r1 = rollsData[startIndex];
-      let r2 = rollsData[startIndex + 1];
-      let r3 = rollsData[startIndex + 2];
-
-      if (r1 === 10) {
-        if (r2 !== undefined && r3 !== undefined) return 10 + r2 + r3;
-        return null;
-      }
-      if (r2 !== undefined) {
-        if (r1 + r2 === 10) {
-          if (r3 !== undefined) return 10 + r3;
-          return null;
-        }
-        return r1 + r2;
-      }
-      return null;
-    }
-
-    /**********************
-     * シュート率（成功球 / (成功球+ミス)）
-     * ※10Fのスペア成立を正しく扱う版
-     **********************/
-    function calcMissesFromRolls(rollsData) {
-      let misses = 0;
-      let idx = 0;
-
-      // 1〜9F
-      for (let f = 1; f <= 9; f++) {
-        const r1 = rollsData[idx];
-        if (r1 === undefined) return misses;
-
-        if (r1 === 10) { idx += 1; continue; }
-
-        misses += 1; // 1投目は未クリアで終わる
-        const r2 = rollsData[idx + 1];
-        if (r2 === undefined) return misses;
-
-        if (r1 + r2 < 10) misses += 1; // 2投目も未クリア
-        idx += 2;
-      }
-
-      // 10F
-      const r1 = rollsData[idx];
-      if (r1 === undefined) return misses;
-
-      if (r1 === 10) {
-        const r2 = rollsData[idx + 1];
-        if (r2 === undefined) return misses;
-
-        if (r2 === 10) {
-          const r3 = rollsData[idx + 2];
-          if (r3 === undefined) return misses;
-          if (r3 < 10) misses += 1;
-          return misses;
-        } else {
-          misses += 1; // r2は未クリアで終わる
-          const r3 = rollsData[idx + 2];
-          if (r3 === undefined) return misses;
-          if (r2 + r3 < 10) misses += 1; // スペア未達ならr3も未クリア
-          return misses;
-        }
-      } else {
-        misses += 1; // r1未クリア
-        const r2 = rollsData[idx + 1];
-        if (r2 === undefined) return misses;
-
-        if (r1 + r2 === 10) {
-          const r3 = rollsData[idx + 2];
-          if (r3 === undefined) return misses;
-          if (r3 < 10) misses += 1;
-          return misses;
-        } else {
-          misses += 1; // r2も未クリア（10Fは2投で終わり）
-          return misses;
-        }
-      }
-    }
-
-    function calculateShootRate(rollsData) {
-      let potted = 0;
-      for (const v of rollsData) potted += Number(v || 0);
-      const misses = calcMissesFromRolls(rollsData);
-      const attempts = potted + misses;
-      return attempts ? ((potted / attempts) * 100).toFixed(1) : 0;
-    }
-
-    function updateCurrentGameStats() {
-      if (rolls.length === 0) currentGameRateEl.textContent = "---%";
-      else currentGameRateEl.textContent = calculateShootRate(rolls) + "%";
-    }
-
-    /**********************
-     * Stats
-     **********************/
-    function updateStats() {
-      const history = getHistory();
-      if (history.length === 0) {
-        document.getElementById('stat-potting').textContent = "---%";
-        document.getElementById('stat-avg').textContent = "---";
-        document.getElementById('stat-high').textContent = "---";
-        if (myChart) myChart.destroy();
-        return;
-      }
-
-      const allTimeHigh = Math.max(...history.map(g => g.score));
-      const recent20 = history.slice(0, 20);
-
-      const totalScore = recent20.reduce((a, b) => a + b.score, 0);
-      const avg20 = (totalScore / recent20.length).toFixed(0);
-
-      let totalRate = 0;
-      let validGames = 0;
-      recent20.forEach(g => {
-        if (g.rolls && g.rolls.length > 0) {
-          totalRate += parseFloat(calculateShootRate(g.rolls));
-          validGames++;
-        }
-      });
-
-      const avgPotting = validGames ? (totalRate / validGames).toFixed(1) : 0;
-
-      document.getElementById('stat-potting').textContent = avgPotting + "%";
-      document.getElementById('stat-avg').textContent = avg20;
-      document.getElementById('stat-high').textContent = allTimeHigh;
-
-      renderChart(recent20);
-    }
-
-    function renderChart(data) {
-      const ctx = document.getElementById('scoreChart').getContext('2d');
-      const chartData = [...data].reverse();
-      const labels = chartData.map((d, i) => i + 1);
-      const scores = chartData.map(d => d.score);
-
-      if (myChart) myChart.destroy();
-
-      myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Score',
-            data: scores,
-            borderColor: '#00e676',
-            backgroundColor: 'rgba(0, 230, 118, 0.1)',
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-            pointBackgroundColor: '#fff',
-            pointRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, max: 300, grid: { color: '#333' }, ticks: { color: '#888' } },
-            x: { display: false }
-          }
-        }
-      });
-    }
-
-    /**********************
-     * Calendar
-     **********************/
-    function changeMonth(diff) {
-      currentCalDate.setMonth(currentCalDate.getMonth() + diff);
-      renderCalendar(currentCalDate);
-    }
-
-    function renderCalendar(date) {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-
-      document.getElementById('cal-month-label').textContent = `${year} / ${month + 1}`;
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
-
-      const calBody = document.getElementById('calendar-body');
-      calBody.innerHTML = '';
-
-      const history = getHistory();
-      const monthlyBestGames = {};
-
-      history.forEach(h => {
-        const d = new Date(h.timestamp);
-        if (d.getFullYear() === year && d.getMonth() === month) {
-          const dayKey = d.getDate();
-          if (!monthlyBestGames[dayKey] || h.score > monthlyBestGames[dayKey].score) {
-            monthlyBestGames[dayKey] = h;
-          }
-        }
-      });
-
-      for (let i = 0; i < firstDay; i++) calBody.appendChild(document.createElement('div'));
-
-      const today = new Date();
-      for (let d = 1; d <= lastDate; d++) {
-        const dayCell = document.createElement('div');
-        dayCell.className = 'day';
-        dayCell.textContent = d;
-
-        if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
-          dayCell.classList.add('today');
-        }
-
-        if (monthlyBestGames[d]) {
-          dayCell.classList.add('has-game');
-          const scoreSpan = document.createElement('div');
-          scoreSpan.className = 'day-score';
-          scoreSpan.textContent = monthlyBestGames[d].score;
-          scoreSpan.onclick = function () { openGameDetail(monthlyBestGames[d]); };
-          dayCell.appendChild(scoreSpan);
-        }
-
-        calBody.appendChild(dayCell);
-      }
-    }
-
-    /**********************
-     * Game input
-     **********************/
-    function renderScoreboard() {
-      renderScoreboardToTarget(rolls, scoreboardEl);
-
-      // total score を計算
-      let rollIndex = 0;
-      let cumulativeScore = 0;
-      for (let f = 1; f <= 10; f++) {
-        let fs = calcFrameScoreWithRolls(f, rollIndex, rolls);
-        if (fs !== null) cumulativeScore += fs;
-
-        if (f < 10) {
-          if (rolls[rollIndex] === 10) rollIndex++;
-          else rollIndex += 2;
-        } else {
-          // 10FはcalcFrameScoreWithRollsがnullじゃないときのみ進める必要があるが、total用途なのでここは省略
-        }
-      }
-
-      totalScoreEl.textContent = cumulativeScore;
-      return cumulativeScore;
-    }
-
-    function addScore(pins) {
-      if (isGameFinished) {
-        rolls = [];
-        currentFrame = 1;
-        isGameFinished = false;
-        renderScoreboard();
-        updateButtonState();
-        updateCurrentGameStats();
-      }
-
-      rolls.push(pins);
-      updateGameStatus();
-      const currentScore = renderScoreboard();
-
-      updateButtonState();
-      updateCurrentGameStats();
-
-      if (currentFrame > 10) {
-        isGameFinished = true;
-        saveHistory(currentScore);
-        renderScoreboard();
-        updateButtonState();
-        setTimeout(() => alert(`ゲーム終了！スコア: ${currentScore}`), 100);
-      }
-    }
-
-    function updateGameStatus() {
-      let f = 1;
-      let idx = 0;
-
-      while (f <= 10 && idx < rolls.length) {
-        let r1 = rolls[idx];
-
-        if (f < 10) {
-          if (r1 === 10) { idx++; f++; }
-          else {
-            if (rolls[idx + 1] !== undefined) { idx += 2; f++; }
-            else break;
-          }
-        } else {
-          let r2 = rolls[idx + 1];
-          let r3 = rolls[idx + 2];
-          if (r2 === undefined) break;
-
-          if (r1 === 10 || r1 + r2 === 10) {
-            if (r3 !== undefined) { f++; idx += 3; }
-            else break;
-          } else {
-            f++; idx += 2;
-          }
-        }
-      }
-      currentFrame = f;
-    }
-
-    function updateButtonState() {
-      if (isGameFinished) {
-        for (let i = 0; i <= 10; i++) buttons[i].disabled = false;
-        document.getElementById('game-ranking-area').style.display = 'block';
-        return;
-      } else {
-        document.getElementById('game-ranking-area').style.display = 'none';
-      }
-
-      let idx = 0;
-      for (let f = 1; f < currentFrame; f++) {
-        if (rolls[idx] === 10) idx++;
-        else idx += 2;
-      }
-
-      let frameRolls = [];
-      for (let i = idx; i < rolls.length; i++) frameRolls.push(rolls[i]);
-
-      let maxPins = 10;
-
-      if (currentFrame < 10) {
-        if (frameRolls.length === 1) maxPins = 10 - frameRolls[0];
-      } else {
-        if (frameRolls.length === 1) {
-          if (frameRolls[0] < 10) maxPins = 10 - frameRolls[0];
-        } else if (frameRolls.length === 2) {
-          if (frameRolls[0] === 10 && frameRolls[1] < 10) maxPins = 10 - frameRolls[1];
-          else if (frameRolls[0] + frameRolls[1] === 10 || (frameRolls[0] === 10 && frameRolls[1] === 10)) maxPins = 10;
-        }
-      }
-
-      for (let score = 0; score <= 10; score++) {
-        const btn = buttons[score];
-        btn.disabled = (score > maxPins);
-      }
-    }
-
-    function undo() {
-      if (isGameFinished) isGameFinished = false;
-      if (rolls.length > 0) {
-        rolls.pop();
-        updateGameStatus();
-        renderScoreboard();
-        updateButtonState();
-        updateCurrentGameStats();
-      }
-    }
-
-    function resetGame() {
-      if (confirm('現在のゲームをリセットしますか？')) {
-        rolls = [];
-        currentFrame = 1;
-        isGameFinished = false;
-        renderScoreboard();
-        updateButtonState();
-        updateCurrentGameStats();
-      }
-    }
-
-    /**********************
-     * Start
-     **********************/
-    init();
-  </script>
+  <!-- ===== Day List Modal（カレンダー：その日の全記録） ===== -->
+  <div id="day-list-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <div id="day-modal-date" style="font-size:0.8rem; color:#aaa;"></div>
+          <div class="modal-title" id="day-modal-title">Day Records</div>
+        </div>
+        <button class="modal-close" onclick="closeDayModal()">×</button>
+      </div>
+
+      <div id="day-modal-summary" style="margin:8px 0 12px; font-size:0.85rem; color:#bbb;"></div>
+      <ul class="history-list" id="day-modal-list"></ul>
+
+      <div style="margin-top:10px; font-size:0.75rem; color:#777; text-align:center;">
+        ※行をタップするとゲーム詳細（スコアボード）を開きます
+      </div>
+    </div>
+  </div>
+
+  <!-- app.js を外出し -->
+  <script src="./app.js" defer></script>
 </body>
 </html>
