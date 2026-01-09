@@ -12,7 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    /* --- デザイン設定 --- */
     :root {
       --bg-color: #121212;
       --card-bg: #1e1e1e;
@@ -94,7 +93,7 @@
     .stat-value { font-size: 1.3rem; font-weight: bold; color: #fff; }
     .chart-container { background: var(--card-bg); padding: 10px; border-radius: 8px; height: 250px; position: relative; width: 100%; }
 
-    /* --- カレンダー --- */
+    /* カレンダー */
     .calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .cal-btn { height: 30px; font-size: 1rem; width: 40px; }
     .current-month { font-size: 1.2rem; font-weight: bold; }
@@ -225,7 +224,7 @@
     .rank-score { font-size: 1.4rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
     .rank-sub-stats { font-size: 0.7rem; color: #aaa; margin-top: 4px; display: block; }
 
-    .rank-filter-bar { display: flex; justify-content: center; gap: 5px; margin-bottom: 15px; }
+    .rank-filter-bar { display: flex; justify-content: center; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
     .rank-filter-btn {
       background: #333;
       color: #888;
@@ -238,7 +237,7 @@
     }
     .rank-filter-btn.active { background: var(--active-bg); color: #fff; border-color: var(--accent-color); font-weight: bold; }
 
-    /* モーダル（普段は非表示） */
+    /* モーダル */
     .modal {
       display: none !important;
       position: fixed; z-index: 1000; left: 0; top: 0;
@@ -281,6 +280,7 @@
 </head>
 
 <body>
+  <!-- GAME -->
   <div id="view-game" class="view active">
     <header>
       <div class="header-title">
@@ -316,14 +316,13 @@
         </div>
 
         <div id="game-ranking-area" style="display:none; margin-top:15px;">
-          <button class="rank-btn-game" onclick="sendToRanking(this)">
-            🏆 このスコアをRankingsに登録
-          </button>
+          <button class="rank-btn-game" onclick="sendToRanking(this)">🏆 このスコアをRankingsに登録</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- CALENDAR -->
   <div id="view-calendar" class="view">
     <header><div class="header-title"><h1>Calendar</h1></div></header>
 
@@ -344,6 +343,7 @@
     </div>
   </div>
 
+  <!-- STATS -->
   <div id="view-stats" class="view">
     <header><div class="header-title"><h1>Analysis</h1></div></header>
 
@@ -360,12 +360,11 @@
     <div class="chart-container"><canvas id="scoreChart"></canvas></div>
 
     <div style="margin-top:20px; text-align:center;">
-      <button onclick="clearHistory()" style="background:transparent; border:1px solid #444; color:#666; font-size:0.8rem; height:30px; width:auto; padding:0 20px;">
-        全データを消去
-      </button>
+      <button onclick="clearHistory()" style="background:transparent; border:1px solid #444; color:#666; font-size:0.8rem; height:30px; width:auto; padding:0 20px;">全データを消去</button>
     </div>
   </div>
 
+  <!-- RANKING -->
   <div id="view-ranking" class="view">
     <header>
       <div class="header-title"><h1>Rankings</h1></div>
@@ -373,11 +372,14 @@
     </header>
 
     <div class="rank-filter-bar">
-      <button class="rank-filter-btn active" onclick="switchRankType('all', this)">全期間</button>
-      <button class="rank-filter-btn" onclick="switchRankType('year', this)">年間</button>
+      <button class="rank-filter-btn active" onclick="switchRankType('today', this)">本日</button>
+      <button class="rank-filter-btn" onclick="switchRankType('week', this)">7日</button>
       <button class="rank-filter-btn" onclick="switchRankType('month', this)">月間</button>
-      <button class="rank-filter-btn" onclick="switchRankType('week', this)">週間</button>
+      <button class="rank-filter-btn" onclick="switchRankType('year', this)">年間</button>
+      <button class="rank-filter-btn" onclick="switchRankType('all', this)">殿堂</button>
     </div>
+
+    <div id="rank-desc" style="color:#888;font-size:0.75rem;margin-top:-6px;margin-bottom:10px;text-align:center;"></div>
 
     <div style="text-align:center; padding: 10px 0;">
       <div id="ranking-loading" style="display:none; color:#888;">読み込み中...</div>
@@ -395,6 +397,7 @@
     </div>
   </div>
 
+  <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('game')"><span class="tab-icon">🎱</span>Game</button>
     <button class="tab-btn" onclick="switchTab('calendar')"><span class="tab-icon">📅</span>Calendar</button>
@@ -402,6 +405,7 @@
     <button class="tab-btn" onclick="switchTab('stats')"><span class="tab-icon">📈</span>Stats</button>
   </div>
 
+  <!-- MODAL -->
   <div id="game-detail-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -430,15 +434,18 @@
     // ★あなたのGAS URL（/exec）を設定
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyfCTtZRbDI-n5AZSA-wpB6jowbMf_vpNjij-VopnFYryDkBz-kV5dCYzeeseeNoVcY/exec";
 
-    // ★ランキング方式（GAS側doGetを「ログから生成」にした場合に使う）
-    // rolling: 直近7/30/365日, calendar: 今週/当月/当年
-    const RANK_BASIS = "rolling"; // "rolling" or "calendar"
-    // games: 全ゲームから上位, players: 各プレイヤーのベスト1件だけで上位（固定化を弱める）
-    const RANK_MODE = "games"; // "games" or "players"
-
-    // ★トークン運用する場合（GASでREQUIRE_TOKEN=true）
+    // ★トークン運用（GAS側REQUIRE_TOKEN=true のときだけ）
     const REQUIRE_TOKEN = false;
     const API_TOKEN = "CHANGE_ME_LONG_RANDOM";
+
+    // ★タブごとの集計定義（本日/7日/月間/年間/殿堂）
+    const RANK_CONFIG = {
+      today: { label: "今日 0:00〜（全ゲーム）",           type: "today", basis: "calendar", mode: "games"   },
+      week:  { label: "直近7日（各人ベスト1件）",           type: "week",  basis: "rolling",  mode: "players" },
+      month: { label: "当月（各人ベスト1件）",              type: "month", basis: "calendar", mode: "players" },
+      year:  { label: "今年（各人ベスト1件）",              type: "year",  basis: "calendar", mode: "players" },
+      all:   { label: "歴代（全ゲーム）",                   type: "all",   basis: "rolling",  mode: "games"   }
+    };
 
     // =======================
     // 状態
@@ -446,8 +453,10 @@
     let rolls = [];
     let currentFrame = 1;
     let isGameFinished = false;
-    let currentRankType = 'all';
+
+    let currentRankType = 'today'; // 初期表示
     let currentCalDate = new Date();
+
     let myChart = null;
 
     // =======================
@@ -463,8 +472,8 @@
 
     const scoreboardEl = document.getElementById('scoreboard');
     const totalScoreEl = document.getElementById('total-score');
-    const buttons = document.querySelectorAll('#keypad button');
 
+    const buttons = document.querySelectorAll('#keypad button'); // 0..10 + undo/reset（順番前提）
     const currentGameRateEl = document.getElementById('current-game-rate');
     const historyListEl = document.getElementById('history-list');
 
@@ -542,28 +551,25 @@
         li.className = 'history-item';
         li.onclick = function() { openGameDetail(h); };
 
-        const left = document.createElement('span');
-        left.className = 'h-date';
-        left.textContent = dateStr;
-
-        const right = document.createElement('span');
-        right.className = 'h-score';
-        right.textContent = String(h.score);
-
-        li.appendChild(left);
-        li.appendChild(right);
+        li.innerHTML = `<span class="h-date">${dateStr}</span><span class="h-score">${h.score}</span>`;
         historyListEl.appendChild(li);
       });
     }
 
     // =======================
-    // 日付整形（ランキング表示用）
+    // 日付整形
     // =======================
     function formatDateString(val) {
       if (val === null || val === undefined || val === '') return "";
       const d = new Date(val);
       if (isNaN(d.getTime())) return String(val);
       return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    }
+    function formatDateTime_(val) {
+      if (val === null || val === undefined || val === '') return "";
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return String(val);
+      return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
     // =======================
@@ -581,6 +587,7 @@
       const dateEl = document.getElementById('modal-date');
       const ts = gameData.timestamp;
       const d = new Date(ts);
+
       if (!isNaN(d.getTime())) {
         dateEl.textContent = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       } else {
@@ -589,12 +596,13 @@
 
       document.getElementById('modal-score').textContent = String(gameData.score);
       document.getElementById('modal-rate').textContent = calculateShootRate(gameData.rolls) + "%";
+
       renderScoreboardToTarget(gameData.rolls, modalScoreboardEl);
       modalEl.classList.add('show');
     }
 
     function closeModal() { modalEl.classList.remove('show'); }
-    modalEl.onclick = function(e) { if (e.target === modalEl) closeModal(); }
+    modalEl.onclick = function(e) { if (e.target === modalEl) closeModal(); };
 
     // =======================
     // ランキング登録（POST）
@@ -627,17 +635,15 @@
       };
       if (REQUIRE_TOKEN) payload.token = API_TOKEN;
 
-      // ★ no-cors をやめて、成功/失敗を判定できるようにする
+      // POSTはプリフライト回避のため text/plain 推奨
       fetch(GAS_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" }, // プリフライト回避の定番
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       })
       .then(r => r.json())
       .then(res => {
-        if (!res || res.ok !== true) {
-          throw new Error(res && res.error ? res.error : "server error");
-        }
+        if (!res || res.ok !== true) throw new Error(res && res.error ? res.error : "server error");
         alert("登録完了！Rankingsタブで確認できます。");
       })
       .catch(err => {
@@ -654,29 +660,29 @@
     // =======================
     function switchRankType(type, btn) {
       currentRankType = type;
-      const btns = document.querySelectorAll('.rank-filter-btn');
-      btns.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.rank-filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       fetchRanking(type);
     }
 
-    function fetchRanking(type = 'all') {
+    function fetchRanking(key = 'today') {
       const loadingEl = document.getElementById('ranking-loading');
       const listEl = document.getElementById('ranking-list');
       const errorEl = document.getElementById('ranking-error');
+      const descEl = document.getElementById('rank-desc');
+
+      const cfg = RANK_CONFIG[key] || RANK_CONFIG.today;
 
       listEl.innerHTML = '';
       loadingEl.style.display = 'block';
       errorEl.style.display = 'none';
+      if (descEl) descEl.textContent = cfg.label;
 
       const params = new URLSearchParams();
-      params.set('type', type);
-      params.set('_', String(Date.now())); // キャッシュ対策
-
-      // doGetを「ログから生成」にした場合のオプション
-      params.set('basis', RANK_BASIS);
-      params.set('mode', RANK_MODE);
-
+      params.set('type', cfg.type);
+      params.set('basis', cfg.basis);
+      params.set('mode', cfg.mode);
+      params.set('_', String(Date.now())); // cache bust
       if (REQUIRE_TOKEN) params.set('token', API_TOKEN);
 
       const fetchUrl = `${GAS_URL}?${params.toString()}`;
@@ -687,20 +693,12 @@
           loadingEl.style.display = 'none';
 
           if (!Array.isArray(data) || data.length === 0) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = 3;
-            td.style.textAlign = "center";
-            td.style.padding = "20px";
-            td.style.color = "#888";
-            td.textContent = "データがありません";
-            tr.appendChild(td);
-            listEl.appendChild(tr);
+            listEl.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#888;">データがありません</td></tr>';
             return;
           }
 
           data.forEach((row) => {
-            // 期待形式: [rank, dateRaw, name, score, rate, avg, rollsJson]
+            // [rank, dateRaw(ms), name, score, rate, avg, rollsJson]
             const rank = row[0];
             const dateRaw = row[1];
             const name = row[2];
@@ -709,7 +707,7 @@
             const avg = row[5];
             const rollsJson = row[6];
 
-            const dateStr = formatDateString(dateRaw);
+            const dateStr = (key === 'today') ? formatDateTime_(dateRaw) : formatDateString(dateRaw);
 
             let rankClass = 'rank-other';
             if (rank === 1) rankClass = 'rank-1';
@@ -718,52 +716,23 @@
 
             const tr = document.createElement('tr');
             tr.className = rankClass;
-
-            // 1列目（順位）
-            const tdRank = document.createElement('td');
-            tdRank.style.textAlign = "center";
-            const badge = document.createElement('div');
-            badge.className = 'rank-badge';
-            badge.textContent = String(rank);
-            tdRank.appendChild(badge);
-
-            // 2列目（名前+日付）
-            const tdPlayer = document.createElement('td');
-            tdPlayer.className = 'rank-player-cell';
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'rank-name';
-            nameSpan.textContent = String(name);
-            const dateSpan = document.createElement('span');
-            dateSpan.className = 'rank-date';
-            dateSpan.textContent = String(dateStr);
-            tdPlayer.appendChild(nameSpan);
-            tdPlayer.appendChild(dateSpan);
-
-            // 3列目（スコア+stats）
-            const tdStats = document.createElement('td');
-            tdStats.className = 'rank-stats-cell';
-            const scoreDiv = document.createElement('div');
-            scoreDiv.className = 'rank-score';
-            scoreDiv.textContent = String(score);
-            const sub = document.createElement('span');
-            sub.className = 'rank-sub-stats';
-            sub.textContent = `Rate: ${rate} | Avg: ${avg}`;
-            tdStats.appendChild(scoreDiv);
-            tdStats.appendChild(sub);
-
-            tr.appendChild(tdRank);
-            tr.appendChild(tdPlayer);
-            tr.appendChild(tdStats);
+            tr.innerHTML = `
+              <td style="text-align:center;"><div class="rank-badge">${rank}</div></td>
+              <td class="rank-player-cell">
+                <span class="rank-name">${name}</span>
+                <span class="rank-date">${dateStr}</span>
+              </td>
+              <td class="rank-stats-cell">
+                <div class="rank-score">${score}</div>
+                <span class="rank-sub-stats">Rate: ${rate} | Avg: ${avg}</span>
+              </td>
+            `;
 
             tr.onclick = function() {
               if (rollsJson) {
                 try {
                   const rollsArr = JSON.parse(rollsJson);
-                  openGameDetail({
-                    score: score,
-                    rolls: rollsArr,
-                    timestamp: dateRaw
-                  }, name);
+                  openGameDetail({ score: score, rolls: rollsArr, timestamp: dateRaw }, name);
                 } catch (e) {
                   alert("詳細データ形式エラー");
                 }
@@ -783,11 +752,10 @@
     }
 
     // =======================
-    // スコアボード表示
+    // スコアボード描画
     // =======================
     function renderScoreboardToTarget(targetRolls, targetEl) {
       targetEl.innerHTML = '';
-
       let rollIndex = 0;
       let cumulativeScore = 0;
 
@@ -795,7 +763,6 @@
         const frameDiv = document.createElement('div');
         frameDiv.className = 'frame';
 
-        // ゲーム画面のときだけ active を反映
         if (f === currentFrame && !isGameFinished && targetEl === scoreboardEl) {
           frameDiv.classList.add('active');
         }
@@ -813,18 +780,15 @@
         let r2 = targetRolls[rollIndex + 1];
 
         if (f < 10) {
-          // 1投目
           const box1 = document.createElement('div');
           box1.className = 'roll-box';
           if (r1 !== undefined) box1.textContent = (r1 === 10 ? 'X' : (r1 === 0 ? '-' : r1));
           rollsDiv.appendChild(box1);
 
-          // 2投目
           const box2 = document.createElement('div');
           box2.className = 'roll-box';
 
           if (r1 === 10) {
-            // strike は 1投で終了
             rollIndex++;
             const empty = document.createElement('div');
             empty.className = 'roll-box';
@@ -843,7 +807,6 @@
             }
           }
         } else {
-          // 10フレーム
           const localIdx = rollIndex;
           const f10_r1 = targetRolls[localIdx];
           const f10_r2 = targetRolls[localIdx + 1];
@@ -893,7 +856,6 @@
           scoreDiv.textContent = cumulativeScore;
         }
         frameDiv.appendChild(scoreDiv);
-
         targetEl.appendChild(frameDiv);
       }
     }
@@ -1096,8 +1058,7 @@
       });
 
       for (let i = 0; i < firstDay; i++) {
-        const empty = document.createElement('div');
-        calBody.appendChild(empty);
+        calBody.appendChild(document.createElement('div'));
       }
 
       const today = new Date();
@@ -1112,12 +1073,10 @@
 
         if (monthlyBestGames[d]) {
           dayCell.classList.add('has-game');
-
           const scoreSpan = document.createElement('div');
           scoreSpan.className = 'day-score';
           scoreSpan.textContent = monthlyBestGames[d].score;
           scoreSpan.onclick = function() { openGameDetail(monthlyBestGames[d]); };
-
           dayCell.appendChild(scoreSpan);
         }
 
@@ -1126,7 +1085,7 @@
     }
 
     // =======================
-    // ゲーム進行（採点/入力）
+    // ゲーム進行
     // =======================
     function renderScoreboard() {
       renderScoreboardToTarget(rolls, scoreboardEl);
@@ -1150,7 +1109,6 @@
 
     function addScore(pins) {
       if (isGameFinished) {
-        // 終了後の入力は新ゲーム開始
         rolls = [];
         currentFrame = 1;
         isGameFinished = false;
@@ -1215,12 +1173,12 @@
         document.getElementById('game-ranking-area').style.display = 'none';
       }
 
-      // 現在フレームの残ピン計算
       let idx = 0;
       for (let f = 1; f < currentFrame; f++) {
         if (rolls[idx] === 10) idx++;
         else idx += 2;
       }
+
       const frameRolls = [];
       for (let i = idx; i < rolls.length; i++) frameRolls.push(rolls[i]);
 
@@ -1270,10 +1228,10 @@
     // =======================
     init();
 
-    // （任意）Service Workerを使う場合（同階層に sw.js が必要）
-    // if ('serviceWorker' in navigator) {
-    //   navigator.serviceWorker.register('./sw.js').catch(console.error);
-    // }
+    // PWAにするなら sw.js を置いて有効化（任意）
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(console.error);
+    }
   </script>
 </body>
 </html>
