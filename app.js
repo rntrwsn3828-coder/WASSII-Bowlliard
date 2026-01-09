@@ -161,6 +161,9 @@ window.openGameDetail = function (gameData, playerName = null) {
 
   renderScoreboardToTarget(gameData.rolls, modalScoreboardEl);
 
+  // ★修正: Day Records が開いたままでも、詳細を確実に見せるため閉じる（保険）
+  dayModalEl.classList.remove('show');
+
   modalEl.classList.add('show');
 
   if (playerName) {
@@ -191,7 +194,13 @@ function openDayModal(year, monthIndex, day, games) {
     const t = formatTimeString(g.timestamp);
     const rate = (g.rolls && g.rolls.length) ? `${calculateShootRate(g.rolls)}%` : '---%';
     li.innerHTML = `<span class="h-date">${t} / ${rate}</span><span class="h-score">${g.score}</span>`;
-    li.onclick = () => openGameDetail(g);
+
+    // ★修正: Day Records を閉じてから詳細を開く（本命）
+    li.onclick = () => {
+      window.closeDayModal();
+      requestAnimationFrame(() => window.openGameDetail(g));
+    };
+
     dayModalListEl.appendChild(li);
   });
 
