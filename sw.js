@@ -1,5 +1,5 @@
 // 最小のApp Shellキャッシュ
-const CACHE_NAME = "bowlliard-cache-v1";
+const CACHE_NAME = "bowlliard-cache-v1.1";
 const ASSETS = [
   "./",
   "./index.html",
