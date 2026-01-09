@@ -11,7 +11,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    /* --- デザイン設定 --- */
     :root {
       --bg-color: #121212;
       --card-bg: #1e1e1e;
@@ -99,7 +98,7 @@
 
     .stats-main-card { background: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--accent-color); margin-bottom: 10px; }
     .stats-main-value { font-size: 2.5rem; font-weight: 800; color: var(--accent-color); line-height: 1; }
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .stat-card { background: var(--card-bg); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
     .stat-label { font-size: 0.7rem; color: var(--text-sub); display: block; margin-bottom: 5px; }
     .stat-value { font-size: 1.3rem; font-weight: bold; color: #fff; }
@@ -119,25 +118,13 @@
     }
 
     .weekday { color: var(--text-sub); font-size: 0.8rem; padding-bottom: 5px; display:flex; justify-content:center; }
-    .day {
-      background: var(--card-bg);
-      height: 60px;
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-size: 0.9rem;
-      position: relative;
-      width: auto !important;
-      cursor: default;
-    }
+    .day { background: var(--card-bg); height: 58px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.9rem; position: relative; width: auto !important; cursor: pointer; }
     .day.today { border: 1px solid var(--accent-color); }
-    .day.has-game { background: #1b3323; cursor: pointer; }
-    .day-score { font-size: 0.75rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; text-decoration: underline; }
-    .day-count { font-size: 0.65rem; color: #a0cfae; margin-top: 2px; opacity: 0.9; }
+    .day.has-game { background: #1b3323; }
+    .day-score { font-size: 0.7rem; color: var(--accent-color); font-weight: bold; margin-top: 2px; text-decoration: underline; }
+    .day-count { font-size: 0.65rem; color: #9bb8a6; margin-top: 2px; }
 
-    .history-list { list-style: none; padding: 0; margin: 0; max-height: 320px; overflow-y: auto; }
+    .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
     .history-item { background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; }
     .history-item:hover { background: rgba(255,255,255,0.1); }
     .history-item:first-child { border-left: 3px solid var(--accent-color); background: rgba(0, 230, 118, 0.05); }
@@ -244,7 +231,7 @@
     }
     .rank-filter-btn.active { background: var(--active-bg); color: #fff; border-color: var(--accent-color); font-weight: bold; }
 
-    /* モーダル */
+    /* モーダル共通 */
     .modal {
       display: none !important;
       position: fixed;
@@ -292,7 +279,6 @@
       button { height: 80px; font-size: 1.8rem; }
       .rank-btn-game { height: 80px; font-size: 1.5rem; }
       .rank-filter-btn { padding: 8px 16px; font-size: 1rem; height: 40px; }
-      .day { height: 70px; }
     }
   </style>
 </head>
@@ -316,12 +302,12 @@
     <div class="main-content">
       <div class="info-panel">
         <div class="stats-bar">
-          <span class="avg-label">シュート率（今回）</span>
+          <span class="avg-label">シュート率 (今回)</span>
           <span class="avg-value" id="current-game-rate">---%</span>
         </div>
 
         <div id="history-section">
-          <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History（タップで詳細）</div>
+          <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">History (タップで詳細)</div>
           <ul class="history-list" id="history-list"></ul>
         </div>
       </div>
@@ -359,7 +345,7 @@
     <div class="calendar-grid" id="calendar-body"></div>
 
     <div style="margin-top:20px; font-size:0.8rem; color:#888; text-align:center;">
-      *日付セル（緑）をタップすると、その日の記録一覧を開きます
+      *日付セルをタップすると、その日の全記録を一覧できます
     </div>
   </div>
 
@@ -368,21 +354,17 @@
     <header><div class="header-title"><h1>Analysis</h1></div></header>
 
     <div class="stats-main-card">
-      <span class="stat-label">シュート率（直近20ゲーム）</span>
+      <span class="stat-label">シュート率（直近20）</span>
       <span class="stats-main-value" id="stat-potting">---%</span>
     </div>
 
-    <!-- ★ 表記を指定どおりに（分かりやすい5指標） -->
-    <div class="stats-grid" style="margin-bottom:10px;">
+    <div class="stats-grid">
       <div class="stat-card"><span class="stat-label">ストライク率</span><span class="stat-value" id="stat-strike">---%</span></div>
       <div class="stat-card"><span class="stat-label">スペア率</span><span class="stat-value" id="stat-spare">---%</span></div>
       <div class="stat-card"><span class="stat-label">オープン率</span><span class="stat-value" id="stat-open">---%</span></div>
-      <div class="stat-card"><span class="stat-label">平均入れ球</span><span class="stat-value" id="stat-balls">---</span></div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card"><span class="stat-label">Average</span><span class="stat-value" id="stat-avg">---</span></div>
-      <div class="stat-card"><span class="stat-label" style="color:#ffca28">High Score</span><span class="stat-value" id="stat-high" style="color:#ffca28">---</span></div>
+      <div class="stat-card"><span class="stat-label">平均入れ球（1投あたり）</span><span class="stat-value" id="stat-balls">---</span></div>
+      <div class="stat-card"><span class="stat-label">Average（直近20）</span><span class="stat-value" id="stat-avg">---</span></div>
+      <div class="stat-card"><span class="stat-label" style="color:#ffca28">High Score（全期間）</span><span class="stat-value" id="stat-high" style="color:#ffca28">---</span></div>
     </div>
 
     <div class="chart-container"><canvas id="scoreChart"></canvas></div>
@@ -391,10 +373,6 @@
       <button onclick="clearHistory()" style="background:transparent; border:1px solid #444; color:#666; font-size:0.8rem; height:30px; width:auto; padding:0 20px;">
         全データを消去
       </button>
-    </div>
-
-    <div style="margin-top:10px; text-align:center; font-size:0.75rem; color:#777;">
-      ※「平均入れ球」は 1投あたりの平均入球（最大10）です
     </div>
   </div>
 
@@ -407,7 +385,6 @@
       </button>
     </header>
 
-    <!-- 本日/7日/月間/年間/殿堂 -->
     <div class="rank-filter-bar">
       <button class="rank-filter-btn active" onclick="switchRankType('today', this)">本日</button>
       <button class="rank-filter-btn" onclick="switchRankType('7d', this)">過去7日</button>
@@ -442,7 +419,7 @@
     <button class="tab-btn" onclick="switchTab('stats')"><span class="tab-icon">📈</span>Stats</button>
   </div>
 
-  <!-- ===== Game Detail Modal ===== -->
+  <!-- ===== Modal: Game Details ===== -->
   <div id="game-detail-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -460,7 +437,6 @@
         </div>
       </div>
 
-      <!-- プレイヤー能力（GAS直近20 / 選択タブ期間内） -->
       <div id="player-stats-box" style="margin:10px 0 14px; padding:10px; border:1px solid #333; border-radius:10px; background:rgba(255,255,255,0.03); display:none;">
         <div id="player-stats-title" style="font-size:0.85rem; color:#bbb; margin-bottom:8px; text-align:left;"></div>
 
@@ -470,7 +446,7 @@
             <div id="ps-potting" style="font-size:1.2rem; font-weight:800; color:var(--accent-color);">---</div>
           </div>
           <div style="text-align:left;">
-            <div style="font-size:0.7rem; color:#888;">平均入れ球</div>
+            <div style="font-size:0.7rem; color:#888;">平均入れ球（1投）</div>
             <div id="ps-bpm" style="font-size:1.2rem; font-weight:800;">---</div>
           </div>
           <div style="text-align:left;">
@@ -496,27 +472,29 @@
     </div>
   </div>
 
-  <!-- ===== Day List Modal（カレンダー：その日の全記録） ===== -->
+  <!-- ===== Modal: Day Records List ===== -->
   <div id="day-list-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <div id="day-modal-date" style="font-size:0.8rem; color:#aaa;"></div>
           <div class="modal-title" id="day-modal-title">Day Records</div>
+          <div id="day-modal-summary" style="font-size:0.8rem; color:#888; margin-top:2px;"></div>
         </div>
         <button class="modal-close" onclick="closeDayModal()">×</button>
       </div>
-
-      <div id="day-modal-summary" style="margin:8px 0 12px; font-size:0.85rem; color:#bbb;"></div>
       <ul class="history-list" id="day-modal-list"></ul>
-
-      <div style="margin-top:10px; font-size:0.75rem; color:#777; text-align:center;">
-        ※行をタップするとゲーム詳細（スコアボード）を開きます
-      </div>
     </div>
   </div>
 
-  <!-- app.js を外出し -->
   <script src="./app.js" defer></script>
+
+  <script>
+    // PWAを使わないならこのブロックは削除してOK
+    if ('serviceWorker' in navigator) {
+      // 注意：このsw.jsは「Service Worker用」の別ファイルです（DOM触らない）
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>
