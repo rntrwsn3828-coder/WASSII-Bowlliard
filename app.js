@@ -250,6 +250,7 @@ function renderPlayerStats(playerName, s) {
   document.getElementById('player-stats-title').textContent =
     `${playerName}：直近${s.games}${s.games < s.recent ? `/${s.recent}` : ''}ゲーム（${range}）`;
 
+  // ※ここに入ってくる strike/spare/open は GAS側も全体比に揃える前提
   document.getElementById('ps-potting').textContent = `${s.pottingPct}%`;
   document.getElementById('ps-bpm').textContent = (s.avgPins == null) ? '---' : `${s.avgPins}`;
   document.getElementById('ps-x').textContent = `${s.strikePct}%`;
@@ -737,7 +738,6 @@ function updateStats() {
   let strikeFrames = 0;
   let spareFrames = 0;
   let openFrames = 0;
-  let spareOpp = 0;
 
   let validGames = 0;
 
@@ -758,16 +758,16 @@ function updateStats() {
     strikeFrames += out.strike;
     spareFrames  += out.spare;
     openFrames   += out.open;
-    spareOpp     += out.spareOpp;
   });
 
   const attempts = totalPotted + totalMisses;
   const shootPct = attempts ? (totalPotted / attempts) * 100 : 0;
 
+  // ★ここが修正点：スペア/オープンも「全体比（分母＝総フレーム）」に統一
   const framesTotal = validGames ? (validGames * 10) : 0;
   const strikePct = framesTotal ? (strikeFrames / framesTotal) * 100 : 0;
-  const sparePct  = spareOpp ? (spareFrames / spareOpp) * 100 : 0;
-  const openPct   = spareOpp ? (openFrames / spareOpp) * 100 : 0;
+  const sparePct  = framesTotal ? (spareFrames  / framesTotal) * 100 : 0;
+  const openPct   = framesTotal ? (openFrames   / framesTotal) * 100 : 0;
 
   // ★平均入れ球（1投あたり平均ピン）
   const avgPins = totalRollsCount ? (totalPotted / totalRollsCount) : 0;
