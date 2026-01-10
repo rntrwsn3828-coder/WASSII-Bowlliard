@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bowlliard-v1.21';
+const CACHE_NAME = 'bowlliard-v1.22';
 
 const ASSETS = [
   './',
